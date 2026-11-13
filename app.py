@@ -4,7 +4,7 @@ from google import genai
 
 app = Flask(__name__)
 
-# Initialisation du client Gemini (la clé API est lue depuis l'environnement Render)
+# Initialisation du client Gemini (la clé API est lue automatiquement depuis la variable d'environnement GEMINI_API_KEY sur Render)
 client = genai.Client()
 
 @app.route('/')
@@ -24,7 +24,7 @@ def analyze_chart():
         # Lecture directe des octets de l'image (compatible avec Gemini sans Pillow)
         image_bytes = file.read()
 
-        # Prompt expert SMC / ICT / OTE / POC basé sur tes notes de trading
+        # Prompt expert SMC / ICT / OTE / POC basé sur tes stratégies de trading
         prompt = (
             "Tu es un expert en trading institutionnel (SMC, ICT, Price Action, Fibonacci OTE, Volume Profile POC). "
             "Analyse cette capture d'écran MT5 (Timeframe M15 ou H1) et fournis une analyse claire structurée ainsi :\n\n"
