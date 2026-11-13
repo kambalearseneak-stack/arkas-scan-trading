@@ -6,6 +6,53 @@
   <meta name="theme-color" content="#07111f">
   <title>Terminal · ARKAS SCAN AI V2</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    /* --- STYLE POUR L'EFFET DE SCAN ET LA TRANSPARENCE --- */
+    body {
+      /* L'image de fond est gérée dans le CSS, on s'assure qu'elle est bien là */
+      background: url('/static/akas.jpg') no-repeat center center fixed !important;
+      background-size: cover !important;
+    }
+    body::before {
+      /* Voile sombre un peu plus léger pour voir l'image */
+      background: rgba(7, 17, 31, 0.75) !important;
+    }
+    
+    /* Transparence des panneaux (effet verre) */
+    .panel, .topbar {
+      background: rgba(16, 29, 45, 0.6) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+
+    /* Conteneur de l'image avec effet scan */
+    .preview-wrap {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .scan-line {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 4px;
+      background: #38bdf8;
+      box-shadow: 0 0 15px 4px rgba(56, 189, 248, 0.8);
+      display: none; /* Caché par défaut */
+      z-index: 10;
+    }
+    
+    .scan-line.active {
+      display: block;
+      animation: scanning 2s linear infinite;
+    }
+
+    @keyframes scanning {
+      0% { top: 0; opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { top: 100%; opacity: 0; }
+    }
+  </style>
 </head>
 <body class="app-body">
   <header class="topbar">
@@ -44,7 +91,14 @@
             <span class="muted">JPG, PNG ou WEBP · maximum 8 Mo</span>
             <span class="button secondary">Choisir une image</span>
           </label>
-          <div class="preview-wrap hidden" id="previewWrap"><img id="preview" alt="Aperçu du graphique"><button id="removeImage" class="remove-image" type="button">Retirer</button></div>
+          
+          <!-- C'EST ICI QU'ON AJOUTE LA LIGNE DE SCAN -->
+          <div class="preview-wrap hidden" id="previewWrap">
+            <div class="scan-line" id="scanLine"></div>
+            <img id="preview" alt="Aperçu du graphique">
+            <button id="removeImage" class="remove-image" type="button">Retirer</button>
+          </div>
+          
           <button class="button primary full" id="analyzeBtn" type="button">Lancer l'analyse <span>→</span></button>
           <p class="tiny muted">Conseil : affiche clairement le symbole, le timeframe, les prix et les bougies.</p>
         </div>
