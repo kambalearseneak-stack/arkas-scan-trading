@@ -8,7 +8,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
         body {
-            /* Utilisation de ton image akas.jpg comme arrière-plan */
             background: url("{{ url_for('static', filename='akas.jpg') }}") no-repeat center center fixed;
             background-size: cover;
             min-height: 100vh;
@@ -19,12 +18,11 @@
             padding: 20px;
         }
 
-        /* Voile sombre pour un contraste parfait et lisible */
         body::before {
             content: "";
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(11, 15, 25, 0.85);
+            background: rgba(11, 15, 25, 0.88);
             z-index: 1;
         }
 
@@ -32,8 +30,8 @@
             position: relative;
             z-index: 2;
             width: 100%;
-            max-width: 550px;
-            background: rgba(30, 41, 59, 0.92);
+            max-width: 600px;
+            background: rgba(30, 41, 59, 0.95);
             padding: 30px;
             border-radius: 14px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
@@ -41,118 +39,90 @@
             backdrop-filter: blur(10px);
         }
 
-        .logo-title {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .logo-title h1 {
-            color: #facc15; /* Doré ARKAS */
-            font-size: 1.8rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .logo-title p {
-            color: #94a3b8;
-            font-size: 0.85rem;
-            margin-top: 5px;
-            font-style: italic;
-        }
+        .logo-title { text-align: center; margin-bottom: 20px; }
+        .logo-title h1 { color: #facc15; font-size: 1.8rem; letter-spacing: 1px; text-transform: uppercase; }
+        .logo-title p { color: #94a3b8; font-size: 0.85rem; margin-top: 5px; font-style: italic; }
 
         /* Onglets */
         .tab-buttons {
-            display: flex;
-            margin-bottom: 20px;
-            background: #0f172a;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #334155;
+            display: flex; margin-bottom: 20px; background: #0f172a;
+            border-radius: 8px; overflow: hidden; border: 1px solid #334155;
         }
 
         .tab-btn {
-            flex: 1;
-            padding: 10px;
-            background: transparent;
-            border: none;
-            color: #94a3b8;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
+            flex: 1; padding: 10px; background: transparent; border: none;
+            color: #94a3b8; font-weight: bold; cursor: pointer; transition: 0.3s;
         }
 
-        .tab-btn.active {
-            background: #0284c7;
-            color: white;
-        }
+        .tab-btn.active { background: #0284c7; color: white; }
+        #scannerTabBtn { display: none; }
 
-        .panel-section {
-            display: none;
-        }
+        .panel-section { display: none; }
+        .panel-section.active { display: block; }
 
-        .panel-section.active {
-            display: block;
-        }
-
-        .input-group {
-            margin-bottom: 15px;
-        }
-
-        .input-group label {
-            display: block;
-            color: #cbd5e1;
-            font-size: 0.9rem;
-            margin-bottom: 5px;
-        }
-
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; color: #cbd5e1; font-size: 0.9rem; margin-bottom: 5px; }
         .input-group input, .file-input {
-            width: 100%;
-            padding: 12px;
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: white;
-            border-radius: 8px;
-            font-size: 1rem;
+            width: 100%; padding: 12px; background: #0f172a;
+            border: 1px solid #334155; color: white; border-radius: 8px; font-size: 1rem;
         }
 
         .submit-btn {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #0284c7, #0369a1);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: 0.3s;
+            width: 100%; padding: 12px; background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: white; border: none; border-radius: 8px; font-weight: bold;
+            font-size: 1rem; cursor: pointer; transition: 0.3s; margin-top: 10px;
+        }
+
+        .submit-btn:hover { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+        
+        .btn-verify {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
             margin-top: 10px;
         }
+        .btn-verify:hover { background: linear-gradient(135deg, #a78bfa, #8b5cf6); }
 
-        .submit-btn:hover {
-            background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        /* Panneau de stratégie */
+        .strategy-info {
+            background: rgba(2, 132, 199, 0.1); border-left: 4px solid #0ea5e9;
+            padding: 15px; border-radius: 0 8px 8px 0; margin-bottom: 20px;
+            font-size: 0.85rem; color: #cbd5e1; line-height: 1.5;
         }
+        .strategy-info strong { color: #facc15; display: block; margin-bottom: 5px; font-size: 1rem; }
+        .strategy-info ul { margin-left: 15px; margin-top: 5px; }
 
-        /* Zone de résultat du Scanner */
-        #result {
-            margin-top: 20px;
-            background: #0f172a;
-            padding: 15px;
+        /* Conteneur d'image avec effet Scanner */
+        .image-preview-container {
+            position: relative;
+            display: none;
+            margin-bottom: 15px;
             border-radius: 8px;
-            border: 1px solid #334155;
-            color: #f8fafc;
-            font-size: 0.9rem;
-            white-space: pre-wrap;
-            max-height: 300px;
-            overflow-y: auto;
+            overflow: hidden;
+            border: 2px solid #0284c7;
+        }
+        .image-preview-container img { width: 100%; display: block; }
+
+        /* L'effet de scannage lumineux */
+        .scan-line {
+            position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+            background: #38bdf8;
+            box-shadow: 0 0 15px 5px rgba(56, 189, 248, 0.6);
+            animation: scanning 2s linear infinite;
+        }
+        @keyframes scanning {
+            0% { top: 0; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
         }
 
-        .quote-footer {
-            text-align: center;
-            margin-top: 20px;
-            color: #64748b;
-            font-size: 0.75rem;
+        #result {
+            margin-top: 20px; background: #0f172a; padding: 15px;
+            border-radius: 8px; border: 1px solid #334155; color: #f8fafc;
+            font-size: 0.9rem; white-space: pre-wrap; max-height: 350px;
+            overflow-y: auto; display: none; line-height: 1.6;
         }
+
+        .quote-footer { text-align: center; margin-top: 20px; color: #64748b; font-size: 0.75rem; }
     </style>
 </head>
 <body>
@@ -163,16 +133,15 @@
             <p>"La discipline aujourd'hui, la liberté demain."</p>
         </div>
 
-        <!-- Boutons d'onglets (Connexion / Inscription / Scanner) -->
         <div class="tab-buttons">
-            <button class="tab-btn active" onclick="switchTab('login')">Connexion</button>
-            <button class="tab-btn" onclick="switchTab('register')">Inscription</button>
-            <button class="tab-btn" onclick="switchTab('scanner')">Scanner MT5</button>
+            <button id="loginTabBtn" class="tab-btn active" onclick="switchTab('login', this)">Connexion</button>
+            <button id="registerTabBtn" class="tab-btn" onclick="switchTab('register', this)">Inscription</button>
+            <button id="scannerTabBtn" class="tab-btn" onclick="switchTab('scanner', this)">Scanner</button>
         </div>
 
-        <!-- 1. Formulaire de Connexion -->
+        <!-- Connexion -->
         <div id="loginSection" class="panel-section active">
-            <form onsubmit="handleAuth(event, 'Connexion réussie !')">
+            <form onsubmit="handleAuth(event)">
                 <div class="input-group">
                     <label>Email ou Identifiant</label>
                     <input type="text" required placeholder="arsene@arkas.com">
@@ -185,9 +154,9 @@
             </form>
         </div>
 
-        <!-- 2. Formulaire d'Inscription -->
+        <!-- Inscription -->
         <div id="registerSection" class="panel-section">
-            <form onsubmit="handleAuth(event, 'Compte créé avec succès ! Bienvenue.')">
+            <form onsubmit="handleAuth(event)">
                 <div class="input-group">
                     <label>Nom complet</label>
                     <input type="text" required placeholder="Arsène Kasika">
@@ -204,62 +173,92 @@
             </form>
         </div>
 
-        <!-- 3. Section Scanner MT5 (SMC / ICT) -->
+        <!-- Scanner -->
         <div id="scannerSection" class="panel-section">
-            <p style="color: #cbd5e1; font-size: 0.9rem; margin-bottom: 15px;">
-                Importe ta capture d'écran MT5 (M15 ou H1) pour générer ton signal SMC / ICT :
-            </p>
+            
+            <div class="strategy-info">
+                <strong>Moteur d'analyse institutionnelle</strong>
+                Compatible : MT5, TradingView, Deriv, etc.<br>
+                <ul>
+                    <li><b>SMC & ICT :</b> Order Blocks, FVG, BOS, Liquidité</li>
+                    <li><b>Price Action :</b> Structures de marché, supports/résistances</li>
+                    <li><b>Confluence :</b> Fibonacci OTE & Volume Profile POC</li>
+                </ul>
+                <em>L'IA lit l'ensemble du graphique (paire, timeframe, prix, indicateurs) pour générer ou vérifier un signal.</em>
+            </div>
+
             <form id="uploadForm">
                 <div class="input-group">
+                    <label>Importer une capture d'écran (Graphique)</label>
                     <input type="file" id="fileInput" class="file-input" accept="image/*" required>
                 </div>
-                <button type="submit" class="submit-btn">Lancer l'analyse Gemini AI</button>
+                
+                <!-- Aperçu de l'image avec l'effet scanner -->
+                <div id="imageContainer" class="image-preview-container">
+                    <img id="previewImage" src="" alt="Aperçu du graphique">
+                    <div id="scanEffect" class="scan-line" style="display: none;"></div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="btnScan">Générer un Signal</button>
+                <button type="button" class="submit-btn btn-verify" id="btnVerify">Vérifier une Analyse Existante</button>
             </form>
-            <div id="result">Le rapport de signal (Tendance, OB, OTE, SL/TP) s'affichera ici...</div>
+            
+            <div id="result"></div>
         </div>
 
-        <div class="quote-footer">
-            ARKAS Scan Trading AI &copy; 2026
-        </div>
+        <div class="quote-footer">ARKAS Scan Trading AI &copy; 2026</div>
     </div>
 
     <script>
-        function switchTab(tab) {
-            document.getElementById('loginSection').classList.remove('active');
-            document.getElementById('registerSection').classList.remove('active');
-            document.getElementById('scannerSection').classList.remove('active');
-            
+        let currentFile = null;
+
+        function switchTab(tab, btnElement) {
+            document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-
-            if (tab === 'login') {
-                document.getElementById('loginSection').classList.add('active');
-                event.target.classList.add('active');
-            } else if (tab === 'register') {
-                document.getElementById('registerSection').classList.add('active');
-                event.target.classList.add('active');
-            } else if (tab === 'scanner') {
-                document.getElementById('scannerSection').classList.add('active');
-                event.target.classList.add('active');
-            }
-        }
-
-        function handleAuth(e, message) {
-            e.preventDefault();
-            alert(message);
-        }
-
-        // Gestion de l'envoi de l'image MT5 vers Flask
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const fileInput = document.getElementById('fileInput');
-            const resultDiv = document.getElementById('result');
             
-            if (fileInput.files.length === 0) return;
+            document.getElementById(tab + 'Section').classList.add('active');
+            btnElement.classList.add('active');
+        }
+
+        function handleAuth(e) {
+            e.preventDefault();
+            alert("Authentification réussie ! Accès au scanner débloqué.");
+            const scannerBtn = document.getElementById('scannerTabBtn');
+            scannerBtn.style.display = 'block';
+            switchTab('scanner', scannerBtn);
+        }
+
+        // Gérer l'aperçu de l'image quand on la sélectionne
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                currentFile = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImage').src = e.target.result;
+                    document.getElementById('imageContainer').style.display = 'block';
+                }
+                reader.readAsDataURL(currentFile);
+            }
+        });
+
+        // Fonction principale pour envoyer l'image au serveur
+        async function processImage(mode) {
+            const resultDiv = document.getElementById('result');
+            const scanEffect = document.getElementById('scanEffect');
+            
+            if (!currentFile) {
+                alert("Veuillez sélectionner une image de graphique.");
+                return;
+            }
 
             const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
+            formData.append('file', currentFile);
+            formData.append('mode', mode); // 'signal' ou 'verify'
 
-            resultDiv.innerText = "Analyse institutionnelle en cours (SMC, FVG, OTE, POC)...";
+            // Démarrer l'animation
+            resultDiv.style.display = 'block';
+            resultDiv.innerText = mode === 'signal' ? "Scan du marché en cours..." : "Vérification de l'analyse en cours...";
+            scanEffect.style.display = 'block';
 
             try {
                 const response = await fetch('/analyze', {
@@ -267,14 +266,31 @@
                     body: formData
                 });
                 const data = await response.json();
-                if (data.analysis) {
+                
+                // Arrêter l'animation
+                scanEffect.style.display = 'none';
+                
+                if (response.ok) {
                     resultDiv.innerText = data.analysis;
                 } else {
                     resultDiv.innerText = "Erreur : " + (data.error || "Inconnue");
                 }
             } catch (err) {
+                scanEffect.style.display = 'none';
                 resultDiv.innerText = "Erreur de connexion au serveur Flask.";
             }
+        }
+
+        // Bouton "Générer un Signal"
+        document.getElementById('btnScan').addEventListener('click', (e) => {
+            e.preventDefault();
+            processImage('signal');
+        });
+
+        // Bouton "Vérifier une Analyse"
+        document.getElementById('btnVerify').addEventListener('click', (e) => {
+            e.preventDefault();
+            processImage('verify');
         });
     </script>
 </body>
