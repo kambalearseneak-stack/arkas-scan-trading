@@ -1,26 +1,31 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion - ARKAS</title>
-    <style>
-        body { font-family: sans-serif; background: #0f172a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: #1e293b; padding: 30px; border-radius: 10px; width: 300px; }
-        h2 { text-align: center; color: #facc15; }
-        input { width: 100%; padding: 10px; margin: 10px 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #0ea5e9; border: none; color: white; font-weight: bold; border-radius: 5px; cursor: pointer; margin-top: 10px; }
-    </style>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Connexion · ARKAS SCAN AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
-    <div class="box">
-        <h2>ARKAS SCAN AI</h2>
-        <!-- C'est ce formulaire qui parle à Python -->
-        <form action="/login" method="POST">
-            <input type="email" name="email" placeholder="Votre email" required>
-            <input type="password" name="password" placeholder="Mot de passe" required>
-            <button type="submit">Se Connecter</button>
-        </form>
-    </div>
+<body class="landing">
+  <main class="login-card">
+    <a class="back-link" href="{{ url_for('home') }}">← Accueil</a>
+    <div class="brand-mark small">A</div>
+    <div class="eyebrow">ESPACE PRIVÉ ADMINISTRATEUR</div>
+    <h1>Connexion</h1>
+    <p class="muted">Identifie-toi pour accéder au terminal ARKAS.</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="notice {{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+    <form method="post" action="{{ url_for('login') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label for="email">Adresse email</label>
+      <input id="email" name="email" type="email" autocomplete="username" required placeholder="admin@exemple.com">
+      <label for="password">Mot de passe</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Ton mot de passe">
+      <button class="button primary full" type="submit">Se connecter</button>
+    </form>
+    <p class="tiny muted">Accès réservé à l'administrateur autorisé.</p>
+  </main>
 </body>
 </html>
