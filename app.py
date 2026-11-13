@@ -1,22 +1,58 @@
 import os
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from google import genai
 from google.genai import types
 
 app = Flask(__name__)
 
+# INDISPENSABLE : Une clé secrète pour que Flask puisse garder la session en mémoire
+app.secret_key = os.environ.get("SECRET_KEY", "une_cle_tres_secrete_arkas_2026")
+
 api_key = os.environ.get("GOOGLE_API_KEY")
 if not api_key:
-    raise ValueError("Erreur : La variable d'environnement GOOGLE_API_KEY est manquante.")
+    print("ATTENTION : La variable GOOGLE_API_KEY est manquante.")
+    # On ne lève pas d'erreur ici pour ne pas crasher le site si la clé manque au démarrage
 
-client = genai.Client(api_key=api_key)
+client = genai.Client(api_key=api_key) if api_key else None
+
+# --- ROUTES DES PAGES ---
 
 @app.route('/')
-def index():
+def home():
     return render_template('index.html')
+
+@app.route('/dashboard')
+def dashboard():
+    # SÉCURITÉ : Si l'utilisateur n'est pas connecté, on le renvoie vers le login
+    if 'user' not in session:
+        return redirect(url_for('login_page'))
+    return render_template('dashboard.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login_page():
+    if request.method == 'POST':
+        # Ici, on simule la connexion (on accepte n'importe quel email/mdp pour l'instant)
+        # Plus tard, vous pourrez vérifier dans une base de données
+        email = request.form.get('email')
+        if email:
+            session['user'] = email  # On sauvegarde l'utilisateur dans la session
+            return redirect(url_for('dashboard')) # On redirige vers le scanner
+    
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('user', None) # On efface la mémoire
+    return redirect(url_for('home'))
+
+# --- ROUTE API (SCANNER) ---
 
 @app.route('/analyze', methods=['POST'])
 def analyze_chart():
+    # Sécurité : on vérifie aussi ici que l'utilisateur est connecté
+    if 'user' not in session:
+        return jsonify({'error': 'Non autorisé. Veuillez vous connecter.'}), 401
+
     if 'file' not in request.files:
         return jsonify({'error': 'Aucune image envoyée'}), 400
     
@@ -24,59 +60,24 @@ def analyze_chart():
     if file.filename == '':
         return jsonify({'error': 'Nom de fichier invalide'}), 400
 
-    # Récupérer le mode (signal ou verify)
-    mode = request.form.get('mode', 'signal')
+    if not client:
+         return jsonify({'error': 'Erreur de configuration de l\'API (Clé manquante)'}), 500
 
     try:
         image_bytes = file.read()
         mime_type = file.content_type if file.content_type else "image/jpeg"
 
-        # Prompt de base (extraction d'informations)
-        base_prompt = (
-            "Tu es un analyste expert en trading institutionnel (SMC, ICT, Price Action). "
-            "Analyse cette capture d'écran de graphique financier (provenant de MT5, TradingView, etc.).\n\n"
-            "**ÉTAPE 1 : LECTURE DU GRAPHIQUE**\n"
-            "Extrais toutes les informations textuelles visibles : nom de l'actif (paire, indice), Timeframe, prix actuel, et tout indicateur présent.\n\n"
+        prompt = (
+            "Tu es un expert en trading (SMC, ICT, Price Action). "
+            "Analyse cette capture d'écran de graphique. "
+            "Donne une analyse claire : Tendance, Zones (OB, FVG), Signal (Buy/Sell/Wait), SL, TP1, TP2, TP3."
         )
 
-        # Prompt spécifique selon le mode
-        if mode == 'verify':
-            specific_prompt = (
-                "**ÉTAPE 2 : VÉRIFICATION D'ANALYSE**\n"
-                "L'utilisateur a déjà une idée de trade ou une analyse. Vérifie si le graphique valide ou invalide une entrée en position. "
-                "Identifie les pièges potentiels (faux départs, zones de liquidité non prises).\n"
-                "Donne un avis clair : **VALIDÉ**, **À SURVEILLER**, ou **REJETÉ** avec les raisons SMC/ICT/Price Action.\n\n"
-                "Structure ta réponse ainsi :\n"
-                "1. Contexte du Graphique\n"
-                "2. Vérification de la Structure (BOS, CHoCH)\n"
-                "3. Zones de Confluence (OB, FVG, OTE, POC)\n"
-                "4. Verdict de l'Analyse (Validé/Rejeté)\n"
-                "5. Niveaux d'Invalidation (Stop Loss)"
-            )
-        else:
-            specific_prompt = (
-                "**ÉTAPE 2 : GÉNÉRATION DE SIGNAL**\n"
-                "Fournis une analyse structurée pour trader :\n"
-                "1. **Tendance Actuelle :** (Haussière / Baissière / Neutre)\n"
-                "2. **Zones Clés & Liquidité :** (Order Blocks, FVG, BOS, zones de liquidité, OTE et POC)\n"
-                "3. **Signal Proposé :** (Buy Now, Sell Now, Buy Limit, Sell Limit ou Attente)\n"
-                "4. **Niveaux de Gestion du Risque :**\n"
-                "   - Entrée :\n"
-                "   - Stop Loss (SL) :\n"
-                "   - Take Profit 1 (TP1) :\n"
-                "   - Take Profit 2 (TP2) :\n"
-                "   - Take Profit 3 (TP3) :\n"
-                "5. **Indice de Confiance :** (ex: 85%)"
-            )
-
-        prompt_final = base_prompt + specific_prompt
-
-        # Appel à Gemini
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-1.5-flash',
             contents=[
                 types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
-                prompt_final
+                prompt
             ]
         )
 
