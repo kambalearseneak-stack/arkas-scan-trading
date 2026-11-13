@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARKAS Scan AI</title>
+    <!-- On s'assure que le CSS est bien chargé -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand">ARKAS<span>AI</span></div>
+        <ul class="nav-links">
+            <li><a href="/">Accueil</a></li>
+            <li><a href="/dashboard">Le Scanner</a></li>
+            
+            <!-- Si l'utilisateur est connecté, on affiche Déconnexion, sinon Connexion -->
+            {% if session.get('user') %}
+                <li><a href="/logout" class="btn-login" style="background: #ef4444;">Déconnexion</a></li>
+            {% else %}
+                <li><a href="/login" class="btn-login">Connexion</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="quote-footer">
+        ARKAS Scan Trading AI &copy; 2026 - Propulsé par Gemini Vision
+    </footer>
+
+</body>
+</html>
