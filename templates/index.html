@@ -5,29 +5,250 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ARKAS Scan Trading AI</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: auto; background: #1e293b; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        h1 { color: #38bdf8; text-align: center; font-size: 1.5rem; }
-        input[type="file"] { width: 100%; padding: 10px; margin: 15px 0; background: #334155; border: none; color: white; border-radius: 5px; }
-        button { background: #0284c7; color: white; border: none; padding: 10px 20px; width: 100%; border-radius: 5px; font-weight: bold; cursor: pointer; }
-        button:hover { background: #0ea5e9; }
-        #result { margin-top: 20px; background: #0f172a; padding: 15px; border-radius: 5px; white-space: pre-wrap; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        body {
+            /* Utilisation de ton image akas.jpg comme arrière-plan */
+            background: url("{{ url_for('static', filename='akas.jpg') }}") no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding: 20px;
+        }
+
+        /* Voile sombre pour un contraste parfait et lisible */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 15, 25, 0.85);
+            z-index: 1;
+        }
+
+        .main-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 550px;
+            background: rgba(30, 41, 59, 0.92);
+            padding: 30px;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .logo-title {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo-title h1 {
+            color: #facc15; /* Doré ARKAS */
+            font-size: 1.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .logo-title p {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        /* Onglets */
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 20px;
+            background: #0f172a;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #334155;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .tab-btn.active {
+            background: #0284c7;
+            color: white;
+        }
+
+        .panel-section {
+            display: none;
+        }
+
+        .panel-section.active {
+            display: block;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .input-group input, .file-input {
+            width: 100%;
+            padding: 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        }
+
+        /* Zone de résultat du Scanner */
+        #result {
+            margin-top: 20px;
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            color: #f8fafc;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .quote-footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #64748b;
+            font-size: 0.75rem;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>ARKAS Scan Trading AI</h1>
-        <p>Importe ta capture d'écran MT5 (M15/H1) pour générer ton signal SMC / ICT :</p>
-        
-        <form id="uploadForm">
-            <input type="file" id="fileInput" accept="image/*" required>
-            <button type="submit">Analyser le marché</button>
-        </form>
 
-        <div id="result">Résultat de l'analyse s'affichera ici...</div>
+    <div class="main-container">
+        <div class="logo-title">
+            <h1>ARKAS Scan AI</h1>
+            <p>"La discipline aujourd'hui, la liberté demain."</p>
+        </div>
+
+        <!-- Boutons d'onglets (Connexion / Inscription / Scanner) -->
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchTab('login')">Connexion</button>
+            <button class="tab-btn" onclick="switchTab('register')">Inscription</button>
+            <button class="tab-btn" onclick="switchTab('scanner')">Scanner MT5</button>
+        </div>
+
+        <!-- 1. Formulaire de Connexion -->
+        <div id="loginSection" class="panel-section active">
+            <form onsubmit="handleAuth(event, 'Connexion réussie !')">
+                <div class="input-group">
+                    <label>Email ou Identifiant</label>
+                    <input type="text" required placeholder="arsene@arkas.com">
+                </div>
+                <div class="input-group">
+                    <label>Mot de passe</label>
+                    <input type="password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="submit-btn">Se Connecter</button>
+            </form>
+        </div>
+
+        <!-- 2. Formulaire d'Inscription -->
+        <div id="registerSection" class="panel-section">
+            <form onsubmit="handleAuth(event, 'Compte créé avec succès ! Bienvenue.')">
+                <div class="input-group">
+                    <label>Nom complet</label>
+                    <input type="text" required placeholder="Arsène Kasika">
+                </div>
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" required placeholder="votre_email@domaine.com">
+                </div>
+                <div class="input-group">
+                    <label>Mot de passe</label>
+                    <input type="password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="submit-btn">Créer un compte</button>
+            </form>
+        </div>
+
+        <!-- 3. Section Scanner MT5 (SMC / ICT) -->
+        <div id="scannerSection" class="panel-section">
+            <p style="color: #cbd5e1; font-size: 0.9rem; margin-bottom: 15px;">
+                Importe ta capture d'écran MT5 (M15 ou H1) pour générer ton signal SMC / ICT :
+            </p>
+            <form id="uploadForm">
+                <div class="input-group">
+                    <input type="file" id="fileInput" class="file-input" accept="image/*" required>
+                </div>
+                <button type="submit" class="submit-btn">Lancer l'analyse Gemini AI</button>
+            </form>
+            <div id="result">Le rapport de signal (Tendance, OB, OTE, SL/TP) s'affichera ici...</div>
+        </div>
+
+        <div class="quote-footer">
+            ARKAS Scan Trading AI &copy; 2026
+        </div>
     </div>
 
     <script>
+        function switchTab(tab) {
+            document.getElementById('loginSection').classList.remove('active');
+            document.getElementById('registerSection').classList.remove('active');
+            document.getElementById('scannerSection').classList.remove('active');
+            
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+            if (tab === 'login') {
+                document.getElementById('loginSection').classList.add('active');
+                event.target.classList.add('active');
+            } else if (tab === 'register') {
+                document.getElementById('registerSection').classList.add('active');
+                event.target.classList.add('active');
+            } else if (tab === 'scanner') {
+                document.getElementById('scannerSection').classList.add('active');
+                event.target.classList.add('active');
+            }
+        }
+
+        function handleAuth(e, message) {
+            e.preventDefault();
+            alert(message);
+        }
+
+        // Gestion de l'envoi de l'image MT5 vers Flask
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const fileInput = document.getElementById('fileInput');
@@ -38,7 +259,7 @@
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
 
-            resultDiv.innerText = "Analyse en cours par Gemini AI (SMC / OTE / POC)...";
+            resultDiv.innerText = "Analyse institutionnelle en cours (SMC, FVG, OTE, POC)...";
 
             try {
                 const response = await fetch('/analyze', {
@@ -52,7 +273,7 @@
                     resultDiv.innerText = "Erreur : " + (data.error || "Inconnue");
                 }
             } catch (err) {
-                resultDiv.innerText = "Erreur de connexion au serveur.";
+                resultDiv.innerText = "Erreur de connexion au serveur Flask.";
             }
         });
     </script>
