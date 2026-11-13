@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Scanner - ARKAS</title>
+    <style>
+        body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 15px; border-radius: 8px; }
+        .logout { color: #ef4444; text-decoration: none; font-weight: bold; }
+        .box { background: #1e293b; padding: 30px; border-radius: 8px; margin-top: 20px; }
+        input[type="file"] { margin-bottom: 15px; }
+        button { padding: 10px 20px; background: #0ea5e9; border: none; color: white; border-radius: 5px; cursor: pointer; }
+        #result { margin-top: 20px; background: #0f172a; padding: 15px; border-radius: 5px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Scanner MT5 / TradingView</h2>
+        <!-- Lien pour se déconnecter -->
+        <a href="/logout" class="logout">Déconnexion</a>
+    </div>
+
+    <div class="box">
+        <form id="uploadForm">
+            <input type="file" id="fileInput" accept="image/*" required><br>
+            <button type="submit">Générer un Signal</button>
+        </form>
+        <div id="result">Le résultat s'affichera ici...</div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = document.getElementById('fileInput').files[0];
+            const resDiv = document.getElementById('result');
+            if(!file) return;
+
+            resDiv.innerText = "Analyse en cours...";
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/analyze', { method: 'POST', body: formData });
+                const data = await response.json();
+                resDiv.innerText = data.analysis || data.error;
+            } catch (err) {
+                resDiv.innerText = "Erreur de connexion.";
+            }
+        });
+    </script>
+</body>
+</html>
