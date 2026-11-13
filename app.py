@@ -4,8 +4,14 @@ from google import genai
 
 app = Flask(__name__)
 
-# Initialisation du client Gemini (la clé API est lue automatiquement depuis la variable d'environnement GEMINI_API_KEY sur Render)
-client = genai.Client()
+# 1. Récupération de la clé API depuis la variable d'environnement GOOGLE_API_KEY
+api_key = os.environ.get("GOOGLE_API_KEY")
+
+if not api_key:
+    raise ValueError("Erreur : La variable d'environnement GOOGLE_API_KEY est manquante sur Render.")
+
+# 2. Initialisation explicite du client Gemini avec la clé
+client = genai.Client(api_key=api_key)
 
 @app.route('/')
 def index():
@@ -21,10 +27,13 @@ def analyze_chart():
         return jsonify({'error': 'Nom de fichier invalide'}), 400
 
     try:
-        # Lecture directe des octets de l'image (compatible avec Gemini sans Pillow)
+        # Lecture directe des octets de l'image
         image_bytes = file.read()
 
-        # Prompt expert SMC / ICT / OTE / POC basé sur tes stratégies de trading
+        # Sécurité pour le type MIME (au cas où le navigateur ne l'envoie pas correctement)
+        mime_type = file.content_type if file.content_type else "image/jpeg"
+
+        # Prompt expert SMC / ICT / OTE / POC
         prompt = (
             "Tu es un expert en trading institutionnel (SMC, ICT, Price Action, Fibonacci OTE, Volume Profile POC). "
             "Analyse cette capture d'écran MT5 (Timeframe M15 ou H1) et fournis une analyse claire structurée ainsi :\n\n"
@@ -40,11 +49,11 @@ def analyze_chart():
             "Sois précis, professionnel et direct dans tes recommandations."
         )
 
-        # Appel à Gemini avec le contenu binaire de l'image
+        # Appel à Gemini 
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=[
-                {"mime_type": file.content_type, "data": image_bytes},
+                {"mime_type": mime_type, "data": image_bytes},
                 prompt
             ]
         )
@@ -52,7 +61,13 @@ def analyze_chart():
         return jsonify({'analysis': response.text})
 
     except Exception as e:
+        # Affiche l'erreur dans les logs Render pour faciliter le débogage
+        print(f"Erreur lors de l'appel à Gemini : {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # 3. Configuration OBLIGATOIRE pour Render
+    # Render fournit un port dynamique via la variable d'environnement PORT
+    port = int(os.environ.get("PORT", 10000))
+    # On écoute sur 0.0.0.0 pour être accessible de l'extérieur
+    app.run(host="0.0.0.0", port=port, debug=False)
