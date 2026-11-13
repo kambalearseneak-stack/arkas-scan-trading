@@ -23,6 +23,7 @@
         
         body {
             font-family: 'Inter', sans-serif;
+            /* Syntaxe Flask correcte pour Render */
             background: url("{{ url_for('static', filename='akas.jpg') }}") no-repeat center center fixed;
             background-size: cover;
             min-height: 100vh;
@@ -174,6 +175,7 @@
         .reason-box {
             background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;
             font-size: 0.9rem; line-height: 1.5; margin-top: 15px; border-left: 3px solid var(--accent);
+            white-space: pre-wrap;
         }
 
         .quote-footer { text-align: center; margin-top: 30px; color: #475569; font-size: 0.75rem; }
@@ -289,7 +291,7 @@
             }
         });
 
-        // Envoi à l'API Vercel (analyze.js)
+        // Envoi à l'API Flask (Render)
         async function processImage(mode) {
             const fileInput = document.getElementById('fileInput');
             const resultDiv = document.getElementById('result');
@@ -306,56 +308,51 @@
             scanEffect.style.display = 'block';
 
             const file = fileInput.files[0];
-            const reader = new FileReader();
             
-            reader.onload = async function(event) {
-                const base64Data = event.target.result.split(',')[1];
+            // Préparation des données pour Flask (FormData et non JSON)
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('mode', mode); // 'scan' ou 'audit'
 
-                const payload = {
-                    imageBase64: base64Data,
-                    mimeType: file.type,
-                    mode: mode, // 'scan' ou 'audit'
-                    asset: "AUTO",
-                    timeframe: "AUTO",
-                    prompt: "Analyse ce graphique."
-                };
-
-                try {
-                    const response = await fetch('/api/analyze', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    
-                    const data = await response.json();
-                    scanEffect.style.display = 'none';
-                    
-                    if (response.ok) {
-                        renderResult(data);
+            try {
+                // Appel à votre route Flask /analyze
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                scanEffect.style.display = 'none';
+                
+                if (response.ok) {
+                    // Affichage du résultat (si votre backend renvoie du JSON)
+                    if (typeof data.analysis === 'object') {
+                        renderResult(data.analysis);
                     } else {
+                        // Fallback si le backend renvoie du texte brut
                         resultDiv.style.display = 'block';
-                        resultDiv.innerHTML = `<div class="result-card" style="border-color: #ef4444; color: #ef4444;">Erreur API : ${data.error || 'Inconnue'}</div>`;
+                        resultDiv.innerHTML = `<div class="result-card"><div class="reason-box">${data.analysis}</div></div>`;
                     }
-                } catch (err) {
-                    scanEffect.style.display = 'none';
+                } else {
                     resultDiv.style.display = 'block';
-                    resultDiv.innerHTML = `<div class="result-card" style="border-color: #ef4444; color: #ef4444;">Erreur de connexion au serveur.</div>`;
+                    resultDiv.innerHTML = `<div class="result-card" style="border-color: #ef4444; color: #ef4444;">Erreur API : ${data.error || 'Inconnue'}</div>`;
                 }
-            };
-            reader.readAsDataURL(file);
+            } catch (err) {
+                scanEffect.style.display = 'none';
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `<div class="result-card" style="border-color: #ef4444; color: #ef4444;">Erreur de connexion au serveur Flask.</div>`;
+            }
         }
 
-        // Affichage esthétique du JSON renvoyé par analyze.js
+        // Affichage esthétique du JSON
         function renderResult(data) {
             const resultDiv = document.getElementById('result');
             resultDiv.style.display = 'block';
 
-            // Couleur selon le signal
             let badgeClass = 'bg-wait';
-            if (data.signal.includes('BUY')) badgeClass = 'bg-buy';
-            if (data.signal.includes('SELL')) badgeClass = 'bg-sell';
+            if (data.signal && data.signal.includes('BUY')) badgeClass = 'bg-buy';
+            if (data.signal && data.signal.includes('SELL')) badgeClass = 'bg-sell';
 
-            // Formatage des prix
             const fmt = (val) => val ? Number(val).toFixed(2) : '---';
 
             let html = `
@@ -363,11 +360,11 @@
                     <div class="signal-header">
                         <div>
                             <div class="data-label">Signal Détecté</div>
-                            <div class="signal-badge ${badgeClass}">${data.signal}</div>
+                            <div class="signal-badge ${badgeClass}">${data.signal || 'WAIT'}</div>
                         </div>
                         <div class="score-box">
                             <div class="data-label">Score ARKAS</div>
-                            <div class="score-value">${data.arkas_score}/100</div>
+                            <div class="score-value">${data.arkas_score || 0}/100</div>
                         </div>
                     </div>
 
@@ -390,20 +387,12 @@
                         </div>
                     </div>
 
-                    <div class="data-grid" style="grid-template-columns: 1fr;">
-                         <div class="data-item" style="border-color: var(--wait);">
-                            <div class="data-label">Structure / Tendance</div>
-                            <div class="data-value" style="font-size: 0.9rem;">${data.structure || data.market_bias || 'Non déterminée'}</div>
-                        </div>
-                    </div>
-
                     <div class="reason-box">
                         <strong>Analyse :</strong><br>
                         ${data.reason || 'Aucune raison fournie.'}
                     </div>
             `;
 
-            // Section spéciale si c'est un Audit
             if (data.audit) {
                 html += `
                     <div class="reason-box" style="border-left-color: #8b5cf6; margin-top: 20px;">
