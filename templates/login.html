@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <h2>Accès Membre</h2>
+    <p style="text-align: center; color: #94a3b8; margin-bottom: 20px;">Connectez-vous pour accéder au Scanner</p>
+    
+    <!-- L'action envoie vers la route /login, méthode POST -->
+    <form action="/login" method="POST">
+        <div class="input-group">
+            <label>Email</label>
+            <!-- Le name="email" est important pour que Python puisse lire la valeur -->
+            <input type="email" name="email" placeholder="votre_email@domaine.com" required>
+        </div>
+        <div class="input-group">
+            <label>Mot de passe</label>
+            <input type="password" name="password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%;">Se Connecter</button>
+    </form>
+</div>
+{% endblock %}
