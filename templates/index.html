@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARKAS Scan Trading AI</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: #1e293b; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        h1 { color: #38bdf8; text-align: center; font-size: 1.5rem; }
+        input[type="file"] { width: 100%; padding: 10px; margin: 15px 0; background: #334155; border: none; color: white; border-radius: 5px; }
+        button { background: #0284c7; color: white; border: none; padding: 10px 20px; width: 100%; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        button:hover { background: #0ea5e9; }
+        #result { margin-top: 20px; background: #0f172a; padding: 15px; border-radius: 5px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ARKAS Scan Trading AI</h1>
+        <p>Importe ta capture d'écran MT5 (M15/H1) pour générer ton signal SMC / ICT :</p>
+        
+        <form id="uploadForm">
+            <input type="file" id="fileInput" accept="image/*" required>
+            <button type="submit">Analyser le marché</button>
+        </form>
+
+        <div id="result">Résultat de l'analyse s'affichera ici...</div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('fileInput');
+            const resultDiv = document.getElementById('result');
+            
+            if (fileInput.files.length === 0) return;
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            resultDiv.innerText = "Analyse en cours par Gemini AI (SMC / OTE / POC)...";
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.analysis) {
+                    resultDiv.innerText = data.analysis;
+                } else {
+                    resultDiv.innerText = "Erreur : " + (data.error || "Inconnue");
+                }
+            } catch (err) {
+                resultDiv.innerText = "Erreur de connexion au serveur.";
+            }
+        });
+    </script>
+</body>
+</html>
