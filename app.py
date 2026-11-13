@@ -5,8 +5,7 @@ from PIL import Image
 
 app = Flask(__name__)
 
-# Initialisation du client Gemini
-# Assure-toi que ta clé API GEMINI_API_KEY est bien configurée dans ton environnement
+# Initialisation du client Gemini (la clé API est lue depuis l'environnement)
 client = genai.Client()
 
 @app.route('/')
@@ -26,16 +25,20 @@ def analyze_chart():
         # Ouvrir l'image avec PIL
         image = Image.open(file.stream)
 
-        # Prompt expert SMC / ICT / OTE / POC basé sur tes notes
+        # Prompt expert SMC / ICT / OTE / POC basé sur tes notes de trading
         prompt = (
-            "Analyse cette capture d'écran de trading MT5 en utilisant les concepts SMC (Smart Money Concepts), "
-            "ICT, Price Action, ainsi que la logique de Fibonacci (zones OTE) et le Volume Profile (POC). "
-            "Donne-moi une analyse structurée sous format JSON ou clair avec :\n"
-            "1. Tendance actuelle\n"
-            "2. Zones d'intérêt (Order Blocks, FVG, liquidité, POC, zones OTE)\n"
-            "3. Signal précis (Buy Now, Sell Now, Buy Limit, Sell Limit)\n"
-            "4. Niveaux de Stop Loss (SL) et Take Profit (TP1, TP2, TP3)\n"
-            "5. Indice de confiance en pourcent."
+            "Tu es un expert en trading institutionnel (SMC, ICT, Price Action, Fibonacci OTE, Volume Profile POC). "
+            "Analyse cette capture d'écran MT5 (Timeframe M15 ou H1) et fournis une analyse claire structurée ainsi :\n\n"
+            "1. **Tendance Actuelle :** (Haussière / Baissière / Neutre)\n"
+            "2. **Zones Clés & Liquidité :** (Identification des Order Blocks (OB), Fair Value Gaps (FVG), zones de liquidité, niveaux OTE et POC)\n"
+            "3. **Signal Proposé :** (Buy Now, Sell Now, Buy Limit ou Sell Limit)\n"
+            "4. **Niveaux de Gestion du Risque :**\n"
+            "   - Stop Loss (SL) :\n"
+            "   - Take Profit 1 (TP1) :\n"
+            "   - Take Profit 2 (TP2) :\n"
+            "   - Take Profit 3 (TP3) :\n"
+            "5. **Indice de Confiance :** (ex: 85%)\n\n"
+            "Sois précis, professionnel et direct dans tes recommandations."
         )
 
         # Appel à Gemini avec le modèle multimodal
