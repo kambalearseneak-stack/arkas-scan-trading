@@ -1,11 +1,10 @@
 import os
 from flask import Flask, render_template, request, jsonify
 from google import genai
-from PIL import Image
 
 app = Flask(__name__)
 
-# Initialisation du client Gemini (la clé API est lue depuis l'environnement)
+# Initialisation du client Gemini (la clé API est lue depuis l'environnement Render)
 client = genai.Client()
 
 @app.route('/')
@@ -22,8 +21,8 @@ def analyze_chart():
         return jsonify({'error': 'Nom de fichier invalide'}), 400
 
     try:
-        # Ouvrir l'image avec PIL
-        image = Image.open(file.stream)
+        # Lecture directe des octets de l'image (compatible avec Gemini sans Pillow)
+        image_bytes = file.read()
 
         # Prompt expert SMC / ICT / OTE / POC basé sur tes notes de trading
         prompt = (
@@ -41,10 +40,13 @@ def analyze_chart():
             "Sois précis, professionnel et direct dans tes recommandations."
         )
 
-        # Appel à Gemini avec le modèle multimodal
+        # Appel à Gemini avec le contenu binaire de l'image
         response = client.models.generate_content(
             model='gemini-2.5-flash',
-            contents=[image, prompt]
+            contents=[
+                {"mime_type": file.content_type, "data": image_bytes},
+                prompt
+            ]
         )
 
         return jsonify({'analysis': response.text})
