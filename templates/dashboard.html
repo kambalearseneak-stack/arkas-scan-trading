@@ -1,52 +1,112 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Scanner - ARKAS</title>
-    <style>
-        body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 15px; border-radius: 8px; }
-        .logout { color: #ef4444; text-decoration: none; font-weight: bold; }
-        .box { background: #1e293b; padding: 30px; border-radius: 8px; margin-top: 20px; }
-        input[type="file"] { margin-bottom: 15px; }
-        button { padding: 10px 20px; background: #0ea5e9; border: none; color: white; border-radius: 5px; cursor: pointer; }
-        #result { margin-top: 20px; background: #0f172a; padding: 15px; border-radius: 5px; white-space: pre-wrap; }
-    </style>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <meta name="theme-color" content="#07111f">
+  <title>Terminal · ARKAS SCAN AI V2</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
-    <div class="header">
-        <h2>Scanner MT5 / TradingView</h2>
-        <!-- Lien pour se déconnecter -->
-        <a href="/logout" class="logout">Déconnexion</a>
+<body class="app-body">
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('dashboard') }}"><span class="brand-icon">A</span><span>ARKAS <b>SCAN AI</b><small>V2 PRO TERMINAL</small></span></a>
+    <div class="top-actions"><span class="admin-label">{{ admin_email }}</span>
+      <form method="post" action="{{ url_for('logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="logout-btn" type="submit">Déconnexion</button>
+      </form>
     </div>
+  </header>
 
-    <div class="box">
-        <form id="uploadForm">
-            <input type="file" id="fileInput" accept="image/*" required><br>
-            <button type="submit">Générer un Signal</button>
-        </form>
-        <div id="result">Le résultat s'affichera ici...</div>
-    </div>
+  <main class="shell">
+    <section class="welcome-row">
+      <div><div class="eyebrow">CONTROL CENTER</div><h1>Terminal d'analyse</h1><p class="muted">Scanne un graphique, audite un scénario ou calcule ton risque.</p></div>
+      <div class="status-pill"><i></i> Système prêt</div>
+    </section>
 
-    <script>
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const file = document.getElementById('fileInput').files[0];
-            const resDiv = document.getElementById('result');
-            if(!file) return;
+    <nav class="tabs" aria-label="Outils">
+      <button class="tab active" data-tab="scanner">Scanner IA</button>
+      <button class="tab" data-tab="history">Historique</button>
+      <button class="tab" data-tab="risk">Risk Manager</button>
+    </nav>
 
-            resDiv.innerText = "Analyse en cours...";
-            const formData = new FormData();
-            formData.append('file', file);
+    <section class="tab-panel active" id="panel-scanner">
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-heading"><div><div class="eyebrow">VISION ENGINE</div><h2>Analyse du graphique</h2></div><span class="mini-tag">GEMINI AI</span></div>
+          <div class="mode-switch">
+            <label><input type="radio" name="mode" value="scan" checked><span>Générer un signal</span></label>
+            <label><input type="radio" name="mode" value="audit"><span>Auditer un scénario</span></label>
+          </div>
+          <label class="upload-zone" for="chartFile" id="dropZone">
+            <input id="chartFile" type="file" accept="image/jpeg,image/png,image/webp">
+            <span class="upload-icon">⇧</span><strong>Importer une capture</strong>
+            <span class="muted">JPG, PNG ou WEBP · maximum 8 Mo</span>
+            <span class="button secondary">Choisir une image</span>
+          </label>
+          <div class="preview-wrap hidden" id="previewWrap"><img id="preview" alt="Aperçu du graphique"><button id="removeImage" class="remove-image" type="button">Retirer</button></div>
+          <button class="button primary full" id="analyzeBtn" type="button">Lancer l'analyse <span>→</span></button>
+          <p class="tiny muted">Conseil : affiche clairement le symbole, le timeframe, les prix et les bougies.</p>
+        </div>
+        <div class="panel result-panel">
+          <div class="panel-heading"><div><div class="eyebrow">AI OUTPUT</div><h2>Résultat ARKAS</h2></div><span class="mini-tag" id="resultMode">EN ATTENTE</span></div>
+          <div id="emptyResult" class="empty-state"><div class="empty-symbol">⌁</div><strong>En attente d'une image</strong><p class="muted">Le rapport d'analyse apparaîtra ici.</p></div>
+          <div id="loadingState" class="empty-state hidden"><div class="loader"></div><strong>Analyse en cours…</strong><p class="muted">Lecture de la structure et des zones du graphique.</p></div>
+          <div id="errorState" class="notice error hidden"></div>
+          <div id="analysisResult" class="hidden">
+            <div class="signal-banner" id="signalBanner"><span id="signalText">WAIT</span><span class="confidence" id="confidence">0/100</span></div>
+            <div class="metrics-grid">
+              <div><small>ACTIF</small><b id="asset">—</b></div><div><small>TIMEFRAME</small><b id="timeframe">—</b></div>
+              <div><small>TENDANCE</small><b id="trend">—</b></div><div><small>ENTRÉE</small><b id="entry">—</b></div>
+              <div><small>STOP LOSS</small><b id="stopLoss">—</b></div><div><small>STRUCTURE</small><b id="structure">—</b></div>
+            </div>
+            <div class="result-section"><h3>Take profits</h3><div id="targets" class="target-row"></div></div>
+            <div class="result-section"><h3>Zones identifiées</h3><div id="zones" class="chips"></div></div>
+            <div class="result-section"><h3>Justification</h3><ul id="reasons"></ul></div>
+            <div class="result-section"><h3>Invalidation</h3><p id="invalidation"></p></div>
+            <div class="warning-note" id="riskWarning"></div>
+            <button class="button secondary full" id="copyResult" type="button">Copier le rapport</button>
+          </div>
+        </div>
+      </div>
+    </section>
 
-            try {
-                const response = await fetch('/analyze', { method: 'POST', body: formData });
-                const data = await response.json();
-                resDiv.innerText = data.analysis || data.error;
-            } catch (err) {
-                resDiv.innerText = "Erreur de connexion.";
-            }
-        });
-    </script>
+    <section class="tab-panel" id="panel-history">
+      <div class="panel">
+        <div class="panel-heading"><div><div class="eyebrow">SAVED REPORTS</div><h2>Historique des analyses</h2></div><button class="button secondary compact" id="refreshHistory">Actualiser</button></div>
+        <div id="historyList" class="history-list"><p class="muted">Chargement de l'historique…</p></div>
+      </div>
+    </section>
+
+    <section class="tab-panel" id="panel-risk">
+      <div class="two-col">
+        <div class="panel">
+          <div class="eyebrow">POSITION SIZING</div><h2>Calculateur de risque</h2>
+          <div class="form-grid">
+            <div><label for="capital">Capital du compte ($)</label><input id="capital" type="number" min="0" step="0.01" value="240"></div>
+            <div><label for="riskPercent">Risque (%)</label><input id="riskPercent" type="number" min="0.01" max="100" step="0.01" value="1"></div>
+            <div><label for="entryPrice">Prix d'entrée</label><input id="entryPrice" type="number" step="any" placeholder="Ex. 2350.00"></div>
+            <div><label for="stopPrice">Stop loss</label><input id="stopPrice" type="number" step="any" placeholder="Ex. 2345.00"></div>
+            <div><label for="pointValue">Valeur monétaire du mouvement par 1 lot ($)</label><input id="pointValue" type="number" min="0.000001" step="any" value="1"></div>
+            <div><label for="rr">Ratio rendement / risque</label><input id="rr" type="number" min="0.1" step="0.1" value="2"></div>
+          </div>
+          <p class="tiny muted">La valeur du mouvement par lot doit correspondre aux spécifications du symbole chez ton courtier.</p>
+          <button class="button primary full" id="calculateRisk" type="button">Calculer le risque</button>
+        </div>
+        <div class="panel">
+          <div class="eyebrow">RISK REPORT</div><h2>Résultat du calcul</h2>
+          <div id="riskEmpty" class="empty-state"><div class="empty-symbol">◎</div><strong>En attente des paramètres</strong><p class="muted">Complète les champs puis lance le calcul.</p></div>
+          <div id="riskResult" class="hidden">
+            <div class="risk-highlight"><small>RISQUE MONÉTAIRE</small><strong id="riskMoney">$0.00</strong></div>
+            <div class="risk-lines"><div><span>Distance entrée-stop</span><b id="distance">—</b></div><div><span>Volume théorique</span><b id="lotSize">—</b></div><div><span>Objectif au ratio choisi</span><b id="rewardMoney">—</b></div><div><span>Prix objectif théorique</span><b id="targetPrice">—</b></div></div>
+            <p class="warning-note">Volume indicatif avant arrondi au pas de lot du courtier. Les commissions, swaps, spread et slippage ne sont pas inclus.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">ARKAS SCAN AI V2 · Analyse assistée, décision finale sous ta responsabilité.</footer>
+  </main>
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
 </body>
 </html>
