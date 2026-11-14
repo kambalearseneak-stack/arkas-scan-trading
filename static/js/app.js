@@ -1,8 +1,7 @@
 const $ = (id) => document.getElementById(id);
-const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
 let currentReport = null;
 
-// Onglets
+// Navigation
 document.querySelectorAll('.tab').forEach(button => {
   button.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === button));
@@ -13,96 +12,82 @@ document.querySelectorAll('.tab').forEach(button => {
   });
 });
 
-// Image classique
-const fileInput = $('chartFile');
-fileInput?.addEventListener('change', () => {
-  const file = fileInput.files?.[0];
-  if (!file) return;
-  $('preview').src = URL.createObjectURL(file);
-  $('previewWrap').classList.remove('hidden');
-});
-
+// Effet Scan
 function toggleScanEffect(active) {
   const scanLine = $('scanLine');
   if (scanLine) active ? scanLine.classList.add('active') : scanLine.classList.remove('active');
 }
 
-// Analyse via capture classique
+// --- LOGIQUE DE COLLAGE (PRESSE-PAPIERS) ---
+$('pasteZone')?.addEventListener('click', () => $('chartFile')?.click());
+
+// Intercepter le Ctrl+V n'importe où sur la page
+document.addEventListener('paste', (e) => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf('image') !== -1) {
+      const blob = items[i].getAsFile();
+      handleImageUpload(blob);
+      break;
+    }
+  }
+});
+
+// Gérer l'upload via le bouton classique
+$('chartFile')?.addEventListener('change', (e) => {
+  if (e.target.files.length > 0) handleImageUpload(e.target.files[0]);
+});
+
+function handleImageUpload(file) {
+  if (!file) return;
+  
+  // Basculer sur l'onglet Scanner
+  document.querySelector('[data-tab="scanner"]')?.click();
+  
+  // Afficher l'aperçu
+  $('preview').src = URL.createObjectURL(file);
+  $('previewWrap').classList.remove('hidden');
+  
+  // Lancer l'analyse automatiquement
+  setTimeout(() => $('analyzeBtn')?.click(), 500);
+}
+
+// Bouton depuis TradingView
+$('goToScannerBtn')?.addEventListener('click', () => {
+  document.querySelector('[data-tab="scanner"]')?.click();
+  alert("📸 Cliquez sur l'appareil photo du graphique, choisissez 'Copier l'image', puis revenez sur cette page : l'analyse se fera automatiquement !");
+});
+
+// Lancer l'analyse
 $('analyzeBtn')?.addEventListener('click', async () => {
-  const file = fileInput.files?.[0];
-  if (!file) { alert('Sélectionne une capture.'); return; }
+  // Récupérer le fichier depuis l'input ou depuis l'aperçu
+  const file = $('chartFile').files[0];
+  
+  // Si le fichier vient du presse-papiers, on le recrée
+  let fileToSend = file;
+  if (!fileToSend && $('preview').src.startsWith('blob:')) {
+    const blob = await (await fetch($('preview').src)).blob();
+    fileToSend = new File([blob], "capture.png", { type: "image/png" });
+  }
+  
+  if (!fileToSend) { alert('Veuillez coller ou sélectionner une image.'); return; }
   
   const mode = document.querySelector('input[name="mode"]:checked')?.value || 'scan';
   const asset = $('assetSelect').value;
   const timeframe = $('timeframeSelect').value;
 
   const body = new FormData();
-  body.append('file', file);
+  body.append('file', fileToSend);
   body.append('mode', mode);
   body.append('asset', asset);
   body.append('timeframe', timeframe);
   
-  startAnalysis(body, mode);
-});
-
-// Analyse directe du graphique TradingView
-$('scanTvBtn')?.addEventListener('click', async () => {
-  const chartDiv = $('tradingview_chart');
-  if (!chartDiv) return;
-
-  // On change d'onglet pour afficher le résultat
-  document.querySelector('[data-tab="scanner"]')?.click();
-  
-  // On affiche l'effet de scan
-  toggleScanEffect(true);
   $('emptyResult')?.classList.add('hidden');
   $('loadingState')?.classList.remove('hidden');
   $('analysisResult')?.classList.add('hidden');
-
-  // Tentative de capture via html2canvas
-  try {
-    const canvas = await html2canvas(chartDiv, {
-      useCORS: true, // Important pour TradingView
-      allowTaint: true,
-      scale: 2 // Haute résolution pour que l'IA lise bien
-    });
-    
-    canvas.toBlob(async (blob) => {
-      if (!blob) {
-        alert("La capture a échoué. Utilisez le bouton 'Appareil photo' de TradingView.");
-        return;
-      }
-      
-      const file = new File([blob], "tradingview_capture.png", { type: "image/png" });
-      
-      // On affiche l'aperçu de la capture
-      $('preview').src = URL.createObjectURL(file);
-      $('previewWrap').classList.remove('hidden');
-
-      const body = new FormData();
-      body.append('file', file);
-      body.append('mode', 'scan');
-      body.append('asset', "Déduire de l'image");
-      body.append('timeframe', "Déduire de l'image");
-      
-      // On lance l'analyse avec l'image capturée
-      await startAnalysis(body, 'scan');
-      
-    }, 'image/png');
-  } catch (error) {
-    console.error(error);
-    toggleScanEffect(false);
-    alert("Impossible de capturer TradingView directement. Cliquez sur l'icône Appareil Photo en haut à droite du graphique.");
-  }
-});
-
-// Fonction d'analyse centrale
-async function startAnalysis(body, mode) {
   toggleScanEffect(true);
-  $('emptyResult')?.classList.add('hidden');
-  $('loadingState')?.classList.remove('hidden');
-  $('analysisResult')?.classList.add('hidden');
-  $('errorState')?.classList.add('hidden');
 
   try {
     const response = await fetch('/api/analyze', { method: 'POST', body });
@@ -118,9 +103,9 @@ async function startAnalysis(body, mode) {
     $('errorState').textContent = error.message;
     $('errorState').classList.remove('hidden');
   }
-}
+});
 
-// Affichage des résultats
+// Affichage
 function renderReport(r, mode) {
   $('loadingState')?.classList.add('hidden');
   $('analysisResult')?.classList.remove('hidden');
@@ -142,20 +127,12 @@ function renderReport(r, mode) {
   $('zones').innerHTML = (r.zones || []).map(z => `<span>${z}</span>`).join('');
   $('reasons').innerHTML = (r.reasons || []).map(reason => `<li>${reason}</li>`).join('');
   
-  // Affichage des scénarios détaillés
   if (r.scenarios) {
     $('scenarios').innerHTML = `
-      <div class="scenario-box">
-        <strong>🚀 Scénario Principal (Plan A) :</strong><br>
-        ${r.scenarios.principal}
-      </div>
-      <div class="scenario-box" style="border-left-color: var(--blue);">
-        <strong>🔄 Scénario Alternatif (Plan B) :</strong><br>
-        ${r.scenarios.alternatif}
-      </div>
+      <div class="scenario-box"><strong>🚀 Principal :</strong><br>${r.scenarios.principal}</div>
+      <div class="scenario-box" style="border-left-color: var(--blue);"><strong>🔄 Alternatif :</strong><br>${r.scenarios.alternatif}</div>
     `;
   }
-  
   $('invalidation').textContent = r.invalidation || '—';
   $('riskWarning').textContent = r.risk_warning || '';
 }
@@ -170,9 +147,7 @@ async function loadHistory() {
     const data = await res.json();
     if (!data.items.length) { target.innerHTML = '<p>Aucune analyse.</p>'; return; }
     target.innerHTML = data.items.map(item => `
-      <div class="history-item">
-        <div><strong>#${item.id} · ${item.signal}</strong><br><small>${item.asset} (${item.timeframe})</small></div>
-      </div>
+      <div class="history-item"><div><strong>#${item.id} · ${item.signal}</strong><br><small>${item.asset} (${item.timeframe})</small></div></div>
     `).join('');
   } catch (e) { target.textContent = "Erreur historique"; }
 }
