@@ -30,7 +30,7 @@ app.config.update(
     MAX_CONTENT_LENGTH=MAX_UPLOAD_BYTES,
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE=False, # Désactivé pour Render
+    SESSION_COOKIE_SECURE=False,
     PERMANENT_SESSION_LIFETIME=60 * 60 * 8,
 )
 
@@ -41,13 +41,9 @@ GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash").strip()
 
 gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
-# --- ROUTE POUR L'IMAGE A LA RACINE ---
 @app.route('/akas.jpg')
 def serve_bg_image():
-    # Sert l'image directement depuis la racine du projet
     return send_from_directory(BASE_DIR, 'akas.jpg')
-
-# ... (Le reste des fonctions db_connect, init_db, admin_required, etc. reste identique) ...
 
 def db_connect():
     DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -80,7 +76,7 @@ def admin_required(view):
     def wrapped(*args, **kwargs):
         if not session.get("admin_authenticated"):
             if request.path.startswith("/api/"):
-                return jsonify({"error": "Non autorisé. Connecte-toi."}), 401
+                return jsonify({"error": "Non autorisé."}), 401
             return redirect(url_for("login"))
         return view(*args, **kwargs)
     return wrapped
@@ -90,14 +86,37 @@ def csrf_token(): return ""
 def inject_csrf(): return {"csrf_token": csrf_token}
 def verify_csrf(): pass
 
-def build_prompt(mode):
-    common = """
-Tu es ARKAS SCAN AI, un assistant d'analyse technique de graphiques (SMC, ICT, Price Action).
-Analyse uniquement les informations réellement visibles sur l'image.
-Réponds exclusivement en JSON valide avec exactement ces clés :
-{"signal": "BUY|SELL|WAIT", "asset": "", "timeframe": "", "trend": "", "structure": "", "zones": [], "entry": "", "stop_loss": "", "take_profits": [], "confidence": 0, "reasons": [], "invalidation": "", "risk_warning": ""}
+# --- NOUVEAU PROMPT DÉTAILLÉ EN FRANÇAIS ---
+def build_prompt(mode, asset="Inconnu", timeframe="Inconnu"):
+    common = f"""
+Tu es ARKAS SCAN AI, un analyste expert en trading institutionnel (SMC, ICT, Price Action).
+Contexte fourni par l'utilisateur : Actif = {asset}, Timeframe = {timeframe}.
+
+Analyse l'image et réponds EXCLUSIVEMENT en JSON valide, sans markdown, avec TOUTES les réponses en FRANÇAIS.
+Structure obligatoire :
+{{
+ "signal": "BUY NOW | SELL NOW | BUY LIMIT | SELL LIMIT | WAIT",
+ "asset": "{asset}",
+ "timeframe": "{timeframe}",
+ "trend": "Haussière | Baissière | Range | Indéterminée",
+ "structure": "Explication détaillée des BOS, CHoCH et de la structure de marché",
+ "zones": ["Détail des Order Blocks (OB)", "Fair Value Gaps (FVG)", "Zones de liquidité", "Supports/Résistances"],
+ "entry": "Prix ou 'Non déterminable'",
+ "stop_loss": "Prix ou 'Non déterminable'",
+ "take_profits": ["TP1: ...", "TP2: ...", "TP3: ..."],
+ "confidence": 0,
+ "reasons": ["Justification 1", "Justification 2", "Justification 3"],
+ "scenarios": {{
+   "principal": "Description du scénario principal",
+   "alternatif": "Description du scénario alternatif"
+ }},
+ "invalidation": "Condition précise qui invaliderait ce scénario",
+ "risk_warning": "Avertissement sur le risque"
+}}
 """
-    return common
+    if mode == "audit":
+        return common + "\nMODE AUDIT : Ne génère pas de nouveau trade. Évalue la cohérence du plan visible. Utilise le signal WAIT si le plan n'est pas clair."
+    return common + "\nMODE SCANNER : Recherche une configuration exploitable. Ne propose un signal que si les éléments sont clairs."
 
 def extract_json(text):
     text = (text or "").strip()
@@ -106,7 +125,7 @@ def extract_json(text):
     try:
         return json.loads(text)
     except:
-        return {"signal": "WAIT", "asset": "non déterminable", "timeframe": "non déterminable", "trend": "indéterminée", "structure": "Erreur", "zones": [], "entry": "non déterminable", "stop_loss": "non déterminable", "take_profits": [], "confidence": 0, "reasons": ["Réponse non structurée."], "invalidation": "-", "risk_warning": "-"}
+        return {"signal": "WAIT", "asset": "Erreur", "timeframe": "Erreur", "trend": "Erreur", "structure": "Erreur", "zones": [], "entry": "-", "stop_loss": "-", "take_profits": [], "confidence": 0, "reasons": ["L'IA n'a pas renvoyé un format valide."], "scenarios": {"principal": "-", "alternatif": "-"}, "invalidation": "-", "risk_warning": "-"}
 
 @app.route("/")
 def home():
@@ -153,41 +172,29 @@ def analyze():
     if not upload: return jsonify({"error": "Aucune image."}), 400
     
     mode = request.form.get("mode", "scan").lower()
+    asset = request.form.get("asset", "Inconnu")
+    timeframe = request.form.get("timeframe", "Inconnu")
     image_bytes = upload.read(MAX_UPLOAD_BYTES + 1)
     
-    # Mécanisme de retry si Gemini est surchargé (Erreur 503)
     max_retries = 3
     for attempt in range(max_retries):
         try:
             response = gemini_client.models.generate_content(
                 model=GEMINI_MODEL,
-                contents=[types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"), build_prompt(mode)],
+                contents=[types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"), build_prompt(mode, asset, timeframe)],
                 config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0.2)
             )
             result = extract_json(response.text)
             with db_connect() as conn:
-                conn.execute("INSERT INTO analyses (created_at, mode, original_filename, mime_type, result_text, signal, asset) VALUES (?, ?, ?, ?, ?, ?, ?)", 
-                             (datetime.now(timezone.utc).isoformat(), mode, upload.filename, "image/jpeg", json.dumps(result), result.get("signal"), result.get("asset")))
+                conn.execute("INSERT INTO analyses (created_at, mode, original_filename, mime_type, result_text, signal, asset, timeframe) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", 
+                             (datetime.now(timezone.utc).isoformat(), mode, upload.filename, "image/jpeg", json.dumps(result), result.get("signal"), result.get("asset"), result.get("timeframe")))
                 conn.commit()
             return jsonify({"result": result})
         except Exception as e:
             if ("503" in str(e) or "UNAVAILABLE" in str(e)) and attempt < max_retries - 1:
-                time.sleep(3) # On attend 3 secondes et on réessaie
+                time.sleep(3)
                 continue
             return jsonify({"error": str(e)}), 500
-
-@app.route("/api/chat", methods=["POST"])
-@admin_required
-def chat():
-    if not gemini_client: return jsonify({"error": "GOOGLE_API_KEY manquante."}), 503
-    data = request.get_json()
-    user_message = data.get("message", "")
-    if not user_message: return jsonify({"error": "Message vide."}), 400
-    try:
-        prompt = f"Tu es un expert en trading (SMC/ICT). Réponds de manière concise : {user_message}"
-        response = gemini_client.models.generate_content(model=GEMINI_MODEL, contents=[prompt])
-        return jsonify({"reply": response.text})
-    except Exception as e: return jsonify({"error": str(e)}), 500
 
 @app.route("/api/history")
 @admin_required
@@ -195,14 +202,6 @@ def history():
     with db_connect() as conn:
         rows = conn.execute("SELECT * FROM analyses ORDER BY id DESC LIMIT 50").fetchall()
     return jsonify({"items": [dict(row) for row in rows]})
-
-@app.route("/api/history/<int:id>", methods=["DELETE"])
-@admin_required
-def delete_history_item(id):
-    with db_connect() as conn:
-        conn.execute("DELETE FROM analyses WHERE id = ?", (id,))
-        conn.commit()
-    return jsonify({"ok": True})
 
 @app.route("/health")
 def health(): return jsonify({"status": "ok"})
