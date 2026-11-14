@@ -90,34 +90,32 @@ def verify_csrf(): pass
 def build_prompt(mode, asset="Inconnu", timeframe="Inconnu"):
     common = f"""
 Tu es ARKAS SCAN AI, un analyste expert en trading institutionnel (SMC, ICT, Price Action).
-Contexte fourni par l'utilisateur : Actif = {asset}, Timeframe = {timeframe}.
+L'utilisateur a sélectionné l'actif : {asset} et le timeframe : {timeframe}.
 
-Analyse l'image et réponds EXCLUSIVEMENT en JSON valide, sans markdown, avec TOUTES les réponses en FRANÇAIS.
-Structure obligatoire :
+Réponds EXCLUSIVEMENT en JSON valide avec ces clés (en français) :
 {{
  "signal": "BUY NOW | SELL NOW | BUY LIMIT | SELL LIMIT | WAIT",
  "asset": "{asset}",
  "timeframe": "{timeframe}",
  "trend": "Haussière | Baissière | Range | Indéterminée",
- "structure": "Explication détaillée des BOS, CHoCH et de la structure de marché",
- "zones": ["Détail des Order Blocks (OB)", "Fair Value Gaps (FVG)", "Zones de liquidité", "Supports/Résistances"],
- "entry": "Prix ou 'Non déterminable'",
- "stop_loss": "Prix ou 'Non déterminable'",
- "take_profits": ["TP1: ...", "TP2: ...", "TP3: ..."],
+ "structure": "Explication des BOS, CHoCH et de la structure",
+ "zones": ["Détail des OB", "FVG", "Liquidité", "Support/Résistance"],
+ "entry": "Prix précis d'entrée ou 'Non déterminable'",
+ "stop_loss": "Prix précis du SL ou 'Non déterminable'",
+ "take_profits": ["TP1: [Prix]", "TP2: [Prix]", "TP3: [Prix]"],
  "confidence": 0,
- "reasons": ["Justification 1", "Justification 2", "Justification 3"],
+ "reasons": ["Raison 1", "Raison 2"],
  "scenarios": {{
-   "principal": "Description du scénario principal",
-   "alternatif": "Description du scénario alternatif"
+   "principal": "Sois très précis. Par exemple: 'Placer un Buy Limit à 2350.50 sur le FVG H1. Si le prix réagit, viser TP1. Invalidation si clôture sous 2345.'",
+   "alternatif": "Sois très précis. Par exemple: 'Attendre une confirmation de clôture au-dessus de 2360 pour un Buy Now, avec SL sous le dernier plus bas.'"
  }},
- "invalidation": "Condition précise qui invaliderait ce scénario",
- "risk_warning": "Avertissement sur le risque"
+ "invalidation": "Condition précise d'invalidation",
+ "risk_warning": "Avertissement risque"
 }}
 """
     if mode == "audit":
-        return common + "\nMODE AUDIT : Ne génère pas de nouveau trade. Évalue la cohérence du plan visible. Utilise le signal WAIT si le plan n'est pas clair."
-    return common + "\nMODE SCANNER : Recherche une configuration exploitable. Ne propose un signal que si les éléments sont clairs."
-
+        return common + "\nMODE AUDIT : Ne génère pas de trade. Évalue la cohérence du plan visible. Utilise WAIT si le plan est mauvais, et explique pourquoi dans 'reasons'."
+    return common + "\nMODE SCANNER : Cherche une configuration exploitable. Ne propose un signal que si les éléments sont clairs."
 def extract_json(text):
     text = (text or "").strip()
     if text.startswith("```"):
