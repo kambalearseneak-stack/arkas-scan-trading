@@ -6,29 +6,28 @@
   <title>Terminal Pro · ARKAS SCAN AI</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <style>
+    /* Fond et transparence */
     body { background: url('/akas.jpg') no-repeat center center fixed !important; background-size: cover !important; }
-    body::before { background: rgba(7, 17, 31, 0.7) !important; }
+    body::before { background: rgba(7, 17, 31, 0.75) !important; }
     .panel, .topbar { background: rgba(16, 29, 45, 0.85) !important; backdrop-filter: blur(15px) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; }
     
+    /* Menu */
     .tabs { display: flex !important; gap: 10px !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; padding-bottom: 10px !important; margin-bottom: 20px !important; overflow-x: auto !important; }
     .tab { background: rgba(255,255,255,0.05) !important; border: 1px solid rgba(255,255,255,0.1) !important; border-radius: 8px !important; padding: 10px 20px !important; color: #94a3b8 !important; font-weight: 600 !important; white-space: nowrap !important; transition: 0.3s !important; }
     .tab.active { background: #0ea5e9 !important; color: white !important; border-color: #0ea5e9 !important; }
 
-    .preview-wrap { position: relative; overflow: hidden; }
+    /* Effet de scan */
+    .preview-wrap { position: relative; overflow: hidden; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
     .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #38bdf8; box-shadow: 0 0 15px 4px rgba(56, 189, 248, 0.8); display: none; z-index: 10; }
     .scan-line.active { display: block; animation: scanning 2s linear infinite; }
     @keyframes scanning { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
     
-    .scenario-box { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-top: 10px; border-left: 3px solid var(--gold); font-size: 0.9rem; line-height: 1.5; }
-    #tradingview_chart { height: 500px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+    /* Scénarios */
+    .scenario-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 3px solid var(--gold); font-size: 0.9rem; line-height: 1.6; }
+    .scenario-box strong { color: var(--gold); display: block; margin-bottom: 5px; font-size: 1rem; }
     
-    /* Zone de collage */
-    .paste-zone {
-      border: 2px dashed #0ea5e9; background: rgba(14, 165, 233, 0.1);
-      padding: 20px; text-align: center; border-radius: 10px; margin-top: 15px;
-      cursor: pointer; transition: 0.3s;
-    }
-    .paste-zone:hover { background: rgba(14, 165, 233, 0.2); }
+    /* Graphique */
+    #tradingview_chart { height: 500px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
   </style>
 </head>
 <body class="app-body">
@@ -40,101 +39,115 @@
   </header>
 
   <main class="shell">
-    <section class="welcome-row">
-      <div><div class="eyebrow">CONTROL CENTER</div><h1>Terminal d'analyse</h1></div>
-      <div class="status-pill"><i></i> Système prêt</div>
-    </section>
-
     <nav class="tabs">
-      <button class="tab active" data-tab="market">Marché Direct</button>
-      <button class="tab" data-tab="scanner">Scanner par Capture</button>
-      <button class="tab" data-tab="history">Historique</button>
+      <button class="tab active" data-tab="market">📈 Marché Direct</button>
+      <button class="tab" data-tab="scanner">🔍 Scanner & Audit</button>
+      <button class="tab" data-tab="history">🗂 Historique</button>
     </nav>
 
     <!-- SECTION MARCHÉ DIRECT -->
     <section class="tab-panel active" id="panel-market">
       <div class="panel">
         <div class="panel-heading">
-          <div><div class="eyebrow">LIVE MARKET</div><h2>Graphique interactif</h2></div>
-          <span class="mini-tag">TRADINGVIEW</span>
+          <div><div class="eyebrow">LIVE MARKET</div><h2>Graphique interactif TradingView</h2></div>
         </div>
-        
         <div id="tradingview_chart"></div>
-        
-        <button class="button primary full" id="goToScannerBtn" type="button" style="margin-top: 15px;">
-          🚀 Scanner ce graphique automatiquement
-        </button>
-        
         <div class="notice" style="background: rgba(14, 165, 233, 0.1); border-left: 4px solid #0ea5e9; padding: 15px; border-radius: 5px; margin-top: 15px; font-size: 0.85rem;">
-          <strong>Astuce :</strong> Cliquez sur l'icône <b>Appareil photo</b> du graphique, puis choisissez <b>"Copier l'image"</b>. Revenez ici et cliquez sur le bouton. L'image sera scannée automatiquement.
+          <strong>💡 Comment analyser ce graphique ?</strong><br>
+          1. Cliquez sur l'icône <b>Appareil photo</b> (en haut à droite du graphique) et choisissez <b>Télécharger l'image</b>.<br>
+          2. Allez dans l'onglet <b>"Scanner & Audit"</b>.<br>
+          3. Importez l'image téléchargée pour lancer l'analyse.
         </div>
       </div>
     </section>
 
-    <!-- SECTION SCANNER -->
+    <!-- SECTION SCANNER & AUDIT (Avec belles cartes) -->
     <section class="tab-panel" id="panel-scanner">
       <div class="two-col">
+        <!-- Colonne Gauche : Paramètres -->
         <div class="panel">
-          <div class="panel-heading"><div><div class="eyebrow">VISION ENGINE</div><h2>Analyse</h2></div></div>
+          <div class="panel-heading"><div><div class="eyebrow">CONFIGURATION</div><h2>Paramètres d'analyse</h2></div></div>
           
           <label>Actif analysé</label>
           <select id="assetSelect" class="context-select">
             <option value="XAUUSD (Or)">Or (XAUUSD)</option>
             <option value="BTCUSD (Bitcoin)">Bitcoin (BTCUSD)</option>
             <option value="EURUSD">Euro / Dollar (EURUSD)</option>
+            <option value="Autre">Autre</option>
           </select>
 
           <label>Timeframe</label>
           <select id="timeframeSelect" class="context-select">
-            <option value="M15">M15</option>
-            <option value="H1">H1</option>
-            <option value="H4">H4</option>
+            <option value="M15">M15 (15 min)</option>
+            <option value="H1">H1 (1 heure)</option>
+            <option value="H4">H4 (4 heures)</option>
+            <option value="D1">D1 (Journalier)</option>
           </select>
 
-          <!-- NOUVELLE ZONE DE COLLAGE AUTOMATIQUE -->
-          <div class="paste-zone" id="pasteZone">
-            <strong style="color: white;">📋 Coller l'image ici</strong><br>
-            <span style="font-size: 0.8rem; color: #94a3b8;">(Ctrl+V ou appui long pour coller)</span>
-            <input type="file" id="chartFile" accept="image/*" style="display: none;">
+          <div class="mode-switch" style="margin-top:20px;">
+            <label><input type="radio" name="mode" value="scan" checked><span>🚀 Générer un signal</span></label>
+            <label><input type="radio" name="mode" value="audit"><span>🔎 Auditer mon analyse</span></label>
           </div>
+          
+          <label class="upload-zone" for="chartFile" style="margin-top:15px;">
+            <input id="chartFile" type="file" accept="image/*">
+            <strong>📁 Importer une capture</strong>
+          </label>
           
           <div class="preview-wrap hidden" id="previewWrap" style="margin-top: 15px;">
             <div class="scan-line" id="scanLine"></div>
             <img id="preview" alt="Aperçu" style="width:100%;">
           </div>
           
-          <button class="button primary full" id="analyzeBtn" type="button">Lancer l'analyse →</button>
+          <button class="button primary full" id="analyzeBtn" type="button" style="margin-top: 15px;">Lancer l'analyse →</button>
         </div>
         
+        <!-- Colonne Droite : Résultats (Belles Cartes) -->
         <div class="panel result-panel">
-          <div class="panel-heading"><div><div class="eyebrow">AI OUTPUT</div><h2>Résultat</h2></div><span class="mini-tag" id="resultMode">EN ATTENTE</span></div>
+          <div class="panel-heading"><div><div class="eyebrow">AI OUTPUT</div><h2>Rapport ARKAS</h2></div><span class="mini-tag" id="resultMode">EN ATTENTE</span></div>
           
-          <div id="emptyResult" class="empty-state"><div class="empty-symbol">⌁</div><strong>En attente d'une image</strong></div>
-          <div id="loadingState" class="empty-state hidden"><div class="loader"></div><strong>Analyse en cours…</strong></div>
+          <div id="emptyResult" class="empty-state"><div class="empty-symbol">⌁</div><strong>En attente d'une image</strong><p class="muted">Les résultats s'afficheront ici.</p></div>
+          <div id="loadingState" class="empty-state hidden"><div class="loader"></div><strong>Analyse IA en cours…</strong></div>
           <div id="errorState" class="notice error hidden"></div>
           
           <div id="analysisResult" class="hidden">
-            <div class="signal-banner" id="signalBanner"><span id="signalText">WAIT</span><span class="confidence" id="confidence">0/100</span></div>
-            
-            <div class="metrics-grid">
-              <div><small>ACTIF</small><b id="asset">—</b></div><div><small>TIMEFRAME</small><b id="timeframe">—</b></div>
-              <div><small>TENDANCE</small><b id="trend">—</b></div><div><small>ENTRÉE</small><b id="entry">—</b></div>
-              <div><small>STOP LOSS</small><b id="stopLoss">—</b></div><div><small>STRUCTURE</small><b id="structure" style="font-size:0.75rem;">—</b></div>
+            <!-- Carte Signal -->
+            <div class="signal-banner" id="signalBanner">
+              <span id="signalText">WAIT</span>
+              <span class="confidence" id="confidence">0/100</span>
             </div>
             
-            <div class="result-section"><h3>Take profits</h3><div id="targets" class="target-row"></div></div>
-            <div class="result-section"><h3>Zones identifiées</h3><div id="zones" class="chips"></div></div>
-            <div class="result-section"><h3>Plan d'action</h3><div id="scenarios"></div></div>
-            <div class="result-section"><h3>Justification</h3><ul id="reasons"></ul></div>
-            <div class="result-section"><h3>Invalidation</h3><p id="invalidation"></p></div>
+            <!-- Cartes de données -->
+            <div class="metrics-grid">
+              <div><small>ACTIF</small><b id="asset">—</b></div>
+              <div><small>TIMEFRAME</small><b id="timeframe">—</b></div>
+              <div><small>TENDANCE</small><b id="trend">—</b></div>
+              <div><small>ENTRÉE</small><b id="entry">—</b></div>
+              <div><small>STOP LOSS</small><b id="stopLoss">—</b></div>
+              <div><small>STRUCTURE</small><b id="structure" style="font-size:0.8rem;">—</b></div>
+            </div>
+            
+            <!-- Take Profits et Zones -->
+            <div class="result-section"><h3>🎯 Take Profits</h3><div id="targets" class="target-row"></div></div>
+            <div class="result-section"><h3>📌 Zones Clés</h3><div id="zones" class="chips"></div></div>
+            
+            <!-- Scénarios -->
+            <div class="result-section">
+              <h3>📋 Plan d'action</h3>
+              <div id="scenarios"></div>
+            </div>
+            
+            <div class="result-section"><h3>🧠 Justification</h3><ul id="reasons"></ul></div>
+            <div class="result-section"><h3>🚫 Invalidation</h3><p id="invalidation"></p></div>
             <div class="warning-note" id="riskWarning"></div>
           </div>
         </div>
       </div>
     </section>
 
+    <!-- SECTION HISTORIQUE -->
     <section class="tab-panel" id="panel-history">
-      <div class="panel"><h2>Historique</h2><div id="historyList" class="history-list"></div></div>
+      <div class="panel"><h2>🗂 Historique des analyses</h2><div id="historyList" class="history-list"></div></div>
     </section>
   </main>
 
@@ -142,7 +155,9 @@
   <script>
     new TradingView.widget({
       "container_id": "tradingview_chart", "autosize": true, "symbol": "FX:XAUUSD", "interval": "60",
-      "theme": "dark", "style": "1", "locale": "fr", "enable_publishing": false, "save_image": true
+      "theme": "dark", "style": "1", "locale": "fr", "toolbar_bg": "rgba(16, 29, 45, 0.9)",
+      "enable_publishing": false, "withdateranges": true, "hide_side_toolbar": false, 
+      "allow_symbol_change": true, "save_image": true
     });
   </script>
   <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
