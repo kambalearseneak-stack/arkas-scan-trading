@@ -2,7 +2,6 @@ const $ = (id) => document.getElementById(id);
 const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
 let currentReport = null;
 
-// 1. GESTION DES ONGLETS
 document.querySelectorAll('.tab').forEach(button => {
   button.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === button));
@@ -13,7 +12,6 @@ document.querySelectorAll('.tab').forEach(button => {
   });
 });
 
-// 2. GESTION DE L'IMAGE ET EFFET DE SCAN
 const fileInput = $('chartFile');
 fileInput?.addEventListener('change', () => {
   const file = fileInput.files?.[0];
@@ -22,40 +20,31 @@ fileInput?.addEventListener('change', () => {
   $('previewWrap').classList.remove('hidden');
 });
 
-$('removeImage')?.addEventListener('click', () => {
-  fileInput.value = '';
-  $('preview').removeAttribute('src');
-  $('previewWrap').classList.add('hidden');
-});
-
 function toggleScanEffect(active) {
   const scanLine = $('scanLine');
   if (scanLine) active ? scanLine.classList.add('active') : scanLine.classList.remove('active');
 }
 
-function setLoading(on) {
-  $('emptyResult')?.classList.toggle('hidden', on || !!currentReport);
-  $('loadingState')?.classList.toggle('hidden', !on);
-  $('analysisResult')?.classList.add('hidden');
-  $('errorState')?.classList.add('hidden');
-  if ($('analyzeBtn')) {
-    $('analyzeBtn').disabled = on;
-    $('analyzeBtn').textContent = on ? 'Analyse en cours…' : "Lancer l'analyse →";
-  }
-  toggleScanEffect(on);
-}
-
-// 3. LANCER L'ANALYSE
 $('analyzeBtn')?.addEventListener('click', async () => {
   const file = fileInput.files?.[0];
   if (!file) { alert('Sélectionne une capture.'); return; }
   
+  const mode = document.querySelector('input[name="mode"]:checked')?.value || 'scan';
+  const asset = $('assetSelect').value;
+  const timeframe = $('timeframeSelect').value;
+
   const body = new FormData();
   body.append('file', file);
-  body.append('mode', 'scan');
+  body.append('mode', mode);
+  body.append('asset', asset);
+  body.append('timeframe', timeframe);
   
-  setLoading(true);
-  
+  $('emptyResult')?.classList.add('hidden');
+  $('loadingState')?.classList.remove('hidden');
+  $('analysisResult')?.classList.add('hidden');
+  $('errorState')?.classList.add('hidden');
+  toggleScanEffect(true);
+
   try {
     const response = await fetch('/api/analyze', { method: 'POST', body });
     const data = await response.json();
@@ -63,25 +52,19 @@ $('analyzeBtn')?.addEventListener('click', async () => {
 
     if (!response.ok) throw new Error(data.error || 'Erreur.');
     currentReport = data.result;
-    renderReport(currentReport);
+    renderReport(currentReport, mode);
   } catch (error) {
     toggleScanEffect(false);
     $('loadingState')?.classList.add('hidden');
     $('errorState').textContent = error.message;
     $('errorState').classList.remove('hidden');
-  } finally {
-    if ($('analyzeBtn')) {
-      $('analyzeBtn').disabled = false;
-      $('analyzeBtn').textContent = "Lancer l'analyse →";
-    }
   }
 });
 
-// 4. AFFICHAGE DES BELLES CARTES
-function renderReport(r) {
-  $('emptyResult')?.classList.add('hidden');
+function renderReport(r, mode) {
   $('loadingState')?.classList.add('hidden');
   $('analysisResult')?.classList.remove('hidden');
+  $('resultMode').textContent = mode === 'audit' ? 'AUDIT' : 'SCANNER';
   
   const signal = (r.signal || 'WAIT').toUpperCase();
   $('signalText').textContent = signal;
@@ -98,11 +81,19 @@ function renderReport(r) {
   $('targets').innerHTML = (r.take_profits || []).map(tp => `<span>${tp}</span>`).join('');
   $('zones').innerHTML = (r.zones || []).map(z => `<span>${z}</span>`).join('');
   $('reasons').innerHTML = (r.reasons || []).map(reason => `<li>${reason}</li>`).join('');
+  
+  // Affichage des scénarios
+  if (r.scenarios) {
+    $('scenarios').innerHTML = `
+      <div class="scenario-box"><strong>Principal :</strong> ${r.scenarios.principal}</div>
+      <div class="scenario-box"><strong>Alternatif :</strong> ${r.scenarios.alternatif}</div>
+    `;
+  }
+  
   $('invalidation').textContent = r.invalidation || '—';
   $('riskWarning').textContent = r.risk_warning || '';
 }
 
-// 5. HISTORIQUE (Simplifié)
 async function loadHistory() {
   const target = $('historyList');
   if (!target) return;
@@ -113,7 +104,7 @@ async function loadHistory() {
     if (!data.items.length) { target.innerHTML = '<p>Aucune analyse.</p>'; return; }
     target.innerHTML = data.items.map(item => `
       <div class="history-item">
-        <div><strong>#${item.id} · ${item.signal}</strong><br><small>${item.asset}</small></div>
+        <div><strong>#${item.id} · ${item.signal}</strong><br><small>${item.asset} (${item.timeframe})</small></div>
       </div>
     `).join('');
   } catch (e) { target.textContent = "Erreur historique"; }
