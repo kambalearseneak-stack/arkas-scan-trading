@@ -16,6 +16,7 @@ from werkzeug.security import check_password_hash
 from google import genai
 from google.genai import types
 
+# --- CONFIGURATION DES CHEMINS ---
 BASE_DIR = Path(__file__).resolve().parent
 INSTANCE_DIR = Path(os.environ.get("INSTANCE_DIR", BASE_DIR / "instance"))
 INSTANCE_DIR.mkdir(parents=True, exist_ok=True)
@@ -30,10 +31,11 @@ app.config.update(
     MAX_CONTENT_LENGTH=MAX_UPLOAD_BYTES,
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE=False,
+    SESSION_COOKIE_SECURE=False, # Désactivé pour Render
     PERMANENT_SESSION_LIFETIME=60 * 60 * 8,
 )
 
+# --- VARIABLES D'ENVIRONNEMENT ---
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "").strip().lower()
 ADMIN_PASSWORD_HASH = os.environ.get("ADMIN_PASSWORD_HASH", "").strip()
 GEMINI_API_KEY = os.environ.get("GOOGLE_API_KEY", "").strip()
@@ -41,10 +43,12 @@ GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash").strip()
 
 gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
+# --- ROUTE POUR L'IMAGE A LA RACINE ---
 @app.route('/akas.jpg')
 def serve_bg_image():
     return send_from_directory(BASE_DIR, 'akas.jpg')
 
+# --- BASE DE DONNÉES ---
 def db_connect():
     DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DATABASE_PATH, timeout=20)
@@ -71,12 +75,13 @@ def init_db():
 
 init_db()
 
+# --- SÉCURITÉ ET SESSION ---
 def admin_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
         if not session.get("admin_authenticated"):
             if request.path.startswith("/api/"):
-                return jsonify({"error": "Non autorisé."}), 401
+                return jsonify({"error": "Non autorisé. Connecte-toi."}), 401
             return redirect(url_for("login"))
         return view(*args, **kwargs)
     return wrapped
@@ -86,11 +91,12 @@ def csrf_token(): return ""
 def inject_csrf(): return {"csrf_token": csrf_token}
 def verify_csrf(): pass
 
-# --- NOUVEAU PROMPT DÉTAILLÉ EN FRANÇAIS ---
+# --- PROMPT IA (Détaillé en Français) ---
 def build_prompt(mode, asset="Inconnu", timeframe="Inconnu"):
     common = f"""
 Tu es ARKAS SCAN AI, un analyste expert en trading institutionnel (SMC, ICT, Price Action).
 L'utilisateur a sélectionné l'actif : {asset} et le timeframe : {timeframe}.
+Analyse l'image avec précision.
 
 Réponds EXCLUSIVEMENT en JSON valide avec ces clés (en français) :
 {{
@@ -100,13 +106,13 @@ Réponds EXCLUSIVEMENT en JSON valide avec ces clés (en français) :
  "trend": "Haussière | Baissière | Range | Indéterminée",
  "structure": "Explication des BOS, CHoCH et de la structure",
  "zones": ["Détail des OB", "FVG", "Liquidité", "Support/Résistance"],
- "entry": "Prix précis d'entrée ou 'Non déterminable'",
- "stop_loss": "Prix précis du SL ou 'Non déterminable'",
+ "entry": "Prix précis ou 'Non déterminable'",
+ "stop_loss": "Prix précis ou 'Non déterminable'",
  "take_profits": ["TP1: [Prix]", "TP2: [Prix]", "TP3: [Prix]"],
  "confidence": 0,
  "reasons": ["Raison 1", "Raison 2"],
  "scenarios": {{
-   "principal": "Sois très précis. Par exemple: 'Placer un Buy Limit à 2350.50 sur le FVG H1. Si le prix réagit, viser TP1. Invalidation si clôture sous 2345.'",
+   "principal": "Sois très précis. Par exemple: 'Placer un Buy Limit à 2350.50 sur le FVG H1. Invalidation si clôture sous 2345.'",
    "alternatif": "Sois très précis. Par exemple: 'Attendre une confirmation de clôture au-dessus de 2360 pour un Buy Now, avec SL sous le dernier plus bas.'"
  }},
  "invalidation": "Condition précise d'invalidation",
@@ -116,6 +122,7 @@ Réponds EXCLUSIVEMENT en JSON valide avec ces clés (en français) :
     if mode == "audit":
         return common + "\nMODE AUDIT : Ne génère pas de trade. Évalue la cohérence du plan visible. Utilise WAIT si le plan est mauvais, et explique pourquoi dans 'reasons'."
     return common + "\nMODE SCANNER : Cherche une configuration exploitable. Ne propose un signal que si les éléments sont clairs."
+
 def extract_json(text):
     text = (text or "").strip()
     if text.startswith("```"):
@@ -123,8 +130,14 @@ def extract_json(text):
     try:
         return json.loads(text)
     except:
-        return {"signal": "WAIT", "asset": "Erreur", "timeframe": "Erreur", "trend": "Erreur", "structure": "Erreur", "zones": [], "entry": "-", "stop_loss": "-", "take_profits": [], "confidence": 0, "reasons": ["L'IA n'a pas renvoyé un format valide."], "scenarios": {"principal": "-", "alternatif": "-"}, "invalidation": "-", "risk_warning": "-"}
+        return {
+            "signal": "WAIT", "asset": "Erreur", "timeframe": "Erreur", "trend": "Erreur", 
+            "structure": "Erreur", "zones": [], "entry": "-", "stop_loss": "-", "take_profits": [], 
+            "confidence": 0, "reasons": ["Format invalide."], 
+            "scenarios": {"principal": "-", "alternatif": "-"}, "invalidation": "-", "risk_warning": "-"
+        }
 
+# --- ROUTES DES PAGES ---
 @app.route("/")
 def home():
     if session.get("admin_authenticated"): return redirect(url_for("dashboard"))
@@ -137,11 +150,13 @@ def login():
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         if not ADMIN_EMAIL or not ADMIN_PASSWORD_HASH:
-            flash("Configuration manquante.", "error")
+            flash("Configuration manquante sur Render.", "error")
             return render_template("login.html")
+        
         valid_email = secrets.compare_digest(email, ADMIN_EMAIL)
         try: valid_password = check_password_hash(ADMIN_PASSWORD_HASH, password)
         except: valid_password = False
+        
         if valid_email and valid_password:
             session.clear()
             session["admin_authenticated"] = True
@@ -162,38 +177,61 @@ def logout():
 def dashboard():
     return render_template("dashboard.html", admin_email=session.get("admin_email", "Administrateur"))
 
+# --- ROUTE API D'ANALYSE ---
 @app.route("/api/analyze", methods=["POST"])
 @admin_required
 def analyze():
-    if not gemini_client: return jsonify({"error": "GOOGLE_API_KEY manquante."}), 503
+    if not gemini_client: 
+        return jsonify({"error": "GOOGLE_API_KEY manquante."}), 503
+        
     upload = request.files.get("file")
-    if not upload: return jsonify({"error": "Aucune image."}), 400
+    if not upload: 
+        return jsonify({"error": "Aucune image reçue."}), 400
     
     mode = request.form.get("mode", "scan").lower()
     asset = request.form.get("asset", "Inconnu")
     timeframe = request.form.get("timeframe", "Inconnu")
     image_bytes = upload.read(MAX_UPLOAD_BYTES + 1)
     
+    if len(image_bytes) > MAX_UPLOAD_BYTES:
+        return jsonify({"error": "Image trop lourde."}), 413
+
+    # Mécanisme de retry (réessai) si Google est surchargé (Erreur 503)
     max_retries = 3
     for attempt in range(max_retries):
         try:
             response = gemini_client.models.generate_content(
                 model=GEMINI_MODEL,
-                contents=[types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"), build_prompt(mode, asset, timeframe)],
-                config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0.2)
+                contents=[
+                    types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"), 
+                    build_prompt(mode, asset, timeframe)
+                ],
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json", 
+                    temperature=0.2
+                )
             )
             result = extract_json(response.text)
+            
             with db_connect() as conn:
-                conn.execute("INSERT INTO analyses (created_at, mode, original_filename, mime_type, result_text, signal, asset, timeframe) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", 
-                             (datetime.now(timezone.utc).isoformat(), mode, upload.filename, "image/jpeg", json.dumps(result), result.get("signal"), result.get("asset"), result.get("timeframe")))
+                conn.execute("""
+                    INSERT INTO analyses (created_at, mode, original_filename, mime_type, result_text, signal, asset, timeframe) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    datetime.now(timezone.utc).isoformat(), mode, upload.filename, "image/jpeg", 
+                    json.dumps(result), result.get("signal"), result.get("asset"), result.get("timeframe")
+                ))
                 conn.commit()
+                
             return jsonify({"result": result})
+            
         except Exception as e:
             if ("503" in str(e) or "UNAVAILABLE" in str(e)) and attempt < max_retries - 1:
                 time.sleep(3)
                 continue
             return jsonify({"error": str(e)}), 500
 
+# --- ROUTE HISTORIQUE ---
 @app.route("/api/history")
 @admin_required
 def history():
@@ -201,8 +239,10 @@ def history():
         rows = conn.execute("SELECT * FROM analyses ORDER BY id DESC LIMIT 50").fetchall()
     return jsonify({"items": [dict(row) for row in rows]})
 
+# --- ROUTE DE SANTÉ (Pour Render) ---
 @app.route("/health")
-def health(): return jsonify({"status": "ok"})
+def health(): 
+    return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "10000")), debug=False)
