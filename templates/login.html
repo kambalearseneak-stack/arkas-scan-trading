@@ -2,41 +2,74 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Connexion · ARKAS</title>
+  <title>Connexion · ARKAS SCAN AI</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap');
     body {
-      margin: 0; font-family: 'Space Grotesk', sans-serif;
-      background: url('/static/akas.jpg') no-repeat center center fixed; background-size: cover;
-      color: white; display: flex; justify-content: center; align-items: center; height: 100vh;
+      font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh;
+      background: url('/akas.jpg') no-repeat center center fixed; background-size: cover;
+      display: flex; justify-content: center; align-items: center; color: white;
     }
-    body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(7, 17, 31, 0.9); z-index: -1; }
-    .login-box {
-      background: rgba(16, 29, 45, 0.95); padding: 40px; border-radius: 20px;
-      border: 1px solid #2b435a; width: 100%; max-width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    /* Voile sombre et flou pour l'arrière-plan */
+    body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(7, 17, 31, 0.6); backdrop-filter: blur(10px); z-index: -1; }
+    
+    .container { display: flex; gap: 20px; width: 90%; max-width: 900px; }
+    
+    /* Carte de connexion transparente */
+    .login-card {
+      flex: 1; background: rgba(16, 29, 45, 0.7); backdrop-filter: blur(15px);
+      padding: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.5);
     }
-    h2 { color: #f2c94c; text-align: center; margin-bottom: 20px; }
-    label { display: block; color: #91a4ba; font-size: 0.85rem; margin: 15px 0 5px; }
-    input { width: 100%; padding: 12px; background: #081523; border: 1px solid #2b4055; color: white; border-radius: 8px; box-sizing: border-box; }
-    button { width: 100%; padding: 14px; margin-top: 20px; background: linear-gradient(135deg, #5bd0f5, #0d9fd8); border: none; color: #061522; font-weight: bold; border-radius: 8px; cursor: pointer; }
-    .error { background: #4b202a; color: #ffd9de; padding: 10px; border-radius: 5px; margin-bottom: 10px; text-align: center; font-size: 0.9rem; }
+    h1 { color: #facc15; margin-top: 0; text-align: center; letter-spacing: 2px; }
+    label { display: block; margin: 15px 0 5px; font-size: 0.85rem; color: #94a3b8; }
+    input { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; box-sizing: border-box; }
+    button { width: 100%; padding: 14px; margin-top: 25px; background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; }
+    
+    /* Carte d'informations (Aide) */
+    .info-card {
+      flex: 1; background: rgba(16, 29, 45, 0.7); backdrop-filter: blur(15px);
+      padding: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.5); font-size: 0.9rem; line-height: 1.6;
+    }
+    .info-card h2 { color: #0ea5e9; margin-top: 0; font-size: 1.2rem; }
+    .info-card ul { padding-left: 20px; color: #cbd5e1; }
+    .whatsapp-btn {
+      display: inline-block; background: #25D366; color: white; text-decoration: none;
+      padding: 10px 20px; border-radius: 8px; font-weight: bold; margin-top: 15px;
+    }
+    @media (max-width: 768px) { .container { flex-direction: column; } }
   </style>
 </head>
 <body>
-  <div class="login-box">
-    <h2>Connexion</h2>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% for category, message in messages %}
-        <div class="error">{{ message }}</div>
-      {% endfor %}
-    {% endwith %}
-    <form method="post" action="/login">
-      <label>Adresse email</label>
-      <input type="email" name="email" required placeholder="kambalearseneak@gmail.com">
-      <label>Mot de passe</label>
-      <input type="password" name="password" required placeholder="••••••••">
-      <button type="submit">Se connecter</button>
-    </form>
+  <div class="container">
+    <!-- Formulaire -->
+    <div class="login-card">
+      <h1>ARKAS SCAN AI</h1>
+      <p style="text-align:center; color:#94a3b8;">Accès sécurisé au Terminal</p>
+      <form method="post" action="/login">
+        <label>Email</label>
+        <input type="email" name="email" required placeholder="votre_email@domaine.com">
+        <label>Mot de passe</label>
+        <input type="password" name="password" required placeholder="••••••••">
+        <button type="submit">Se connecter</button>
+      </form>
+    </div>
+
+    <!-- Aide et Exploitation -->
+    <div class="info-card">
+      <h2>💡 Guide d'utilisation</h2>
+      <ul>
+        <li><b>Marché Direct :</b> Utilisez TradingView pour dessiner et ajouter des indicateurs.</li>
+        <li><b>Scanner :</b> Cliquez sur l'appareil photo de TradingView, téléchargez l'image, puis importez-la dans l'onglet Scanner.</li>
+        <li><b>Audit :</b> Soumettez votre propre analyse pour que l'IA la vérifie.</li>
+      </ul>
+      <h2 style="margin-top:20px;">📞 Support & Aide</h2>
+      <p>Besoin d'assistance pour l'exploitation du logiciel ?</p>
+      <a href="https://wa.me/243838424263" class="whatsapp-btn" target="_blank">
+        Contacter le support (WhatsApp)
+      </a>
+      <p style="margin-top:15px; font-size:0.8rem; color:#64748b;">Numéro : 0838424263</p>
+    </div>
   </div>
 </body>
 </html>
