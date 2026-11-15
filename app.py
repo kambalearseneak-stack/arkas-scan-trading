@@ -37,7 +37,7 @@ app.config.update(
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "").strip().lower()
 ADMIN_PASSWORD_HASH = os.environ.get("ADMIN_PASSWORD_HASH", "").strip()
 GEMINI_API_KEY = os.environ.get("GOOGLE_API_KEY", "").strip()
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash").strip()
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash").strip()
 
 gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
@@ -71,7 +71,7 @@ def init_db():
 
 init_db()
 
-# --- OUTILS POUR L'AGENT ARKAS ---
+# --- FONCTION POUR L'IA ---
 def lire_dernieres_analyses(limite=3):
     """Permet à l'IA de lire les dernières analyses du site."""
     try:
@@ -81,6 +81,21 @@ def lire_dernieres_analyses(limite=3):
         return json.dumps([dict(row) for row in rows], ensure_ascii=False)
     except Exception as e:
         return f"Erreur : {str(e)}"
+
+# --- DÉCLARATION DES OUTILS POUR GEMINI ---
+outil_analyses = types.FunctionDeclaration(
+    name="lire_dernieres_analyses",
+    description="Lit les dernières analyses de trading effectuées sur le site.",
+    parameters={
+        "type": "OBJECT",
+        "properties": {
+            "limite": {
+                "type": "INTEGER",
+                "description": "Le nombre d'analyses à récupérer (par défaut 3)."
+            }
+        }
+    }
+)
 
 def admin_required(view):
     @wraps(view)
@@ -97,33 +112,17 @@ def csrf_token(): return ""
 def inject_csrf(): return {"csrf_token": csrf_token}
 def verify_csrf(): pass
 
+# --- PROMPT D'ANALYSE ---
 def build_prompt(mode):
     common = """
 Tu es ARKAS SCAN AI, un Mentor de Trading expert (SMC, ICT, Price Action).
 Analyse l'image fournie. Tu dois DÉTECTER TOI-MÊME l'actif, le timeframe et les prix.
-
-Réponds EXCLUSIVEMENT en JSON valide avec ces clés (en français) :
-{
- "signal": "BUY NOW | SELL NOW | BUY LIMIT | SELL LIMIT | WAIT",
- "asset": "Nom de l'actif",
- "timeframe": "Timeframe",
- "trend": "Haussière | Baissière | Range",
- "structure": "Explication de la structure",
- "zones": ["Zone 1", "Zone 2"],
- "entry": "Prix d'entrée",
- "stop_loss": "Stop Loss",
- "take_profits": ["TP1", "TP2", "TP3"],
- "confidence": 0,
- "points_forts": ["Point fort 1"],
- "points_critiques": ["Point critique 1"],
- "conseil": "Conseil de mentor",
- "scenarios": {"principal": "Plan A", "alternatif": "Plan B"},
- "invalidation": "Condition d'invalidation"
-}
+Réponds EXCLUSIVEMENT en JSON valide avec ces clés :
+{"signal": "", "asset": "", "timeframe": "", "trend": "", "structure": "", "zones": [], "entry": "", "stop_loss": "", "take_profits": [], "confidence": 0, "points_forts": [], "points_critiques": [], "conseil": "", "scenarios": {"principal": "", "alternatif": ""}, "invalidation": ""}
 """
     if mode == "audit":
-        return common + "\nMODE AUDIT : Évalue l'analyse de l'utilisateur. Sois critique."
-    return common + "\nMODE SCANNER : Cherche une configuration exploitable."
+        return common + "\nMODE AUDIT : Évalue l'analyse de l'utilisateur."
+    return common + "\nMODE SCANNER : Cherche une configuration."
 
 def extract_json(text):
     text = (text or "").strip()
@@ -132,7 +131,7 @@ def extract_json(text):
     try:
         return json.loads(text)
     except:
-        return {"signal": "WAIT", "asset": "Erreur", "timeframe": "Erreur", "trend": "Erreur", "structure": "Erreur", "zones": [], "entry": "-", "stop_loss": "-", "take_profits": [], "confidence": 0, "points_forts": [], "points_critiques": [], "conseil": "-", "scenarios": {"principal": "-", "alternatif": "-"}, "invalidation": "-"}
+        return {"signal": "WAIT", "asset": "Erreur", "timeframe": "-", "trend": "-", "structure": "-", "zones": [], "entry": "-", "stop_loss": "-", "take_profits": [], "confidence": 0, "points_forts": [], "points_critiques": [], "conseil": "-", "scenarios": {"principal": "-", "alternatif": "-"}, "invalidation": "-"}
 
 @app.route("/")
 def home():
@@ -181,27 +180,22 @@ def analyze():
     mode = request.form.get("mode", "scan").lower()
     image_bytes = upload.read(MAX_UPLOAD_BYTES + 1)
     
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            response = gemini_client.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=[types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"), build_prompt(mode)],
-                config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0.2)
-            )
-            result = extract_json(response.text)
-            with db_connect() as conn:
-                conn.execute("INSERT INTO analyses (created_at, mode, original_filename, mime_type, result_text, signal, asset, timeframe) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", 
-                             (datetime.now(timezone.utc).isoformat(), mode, upload.filename, "image/jpeg", json.dumps(result), result.get("signal"), result.get("asset"), result.get("timeframe")))
-                conn.commit()
-            return jsonify({"result": result})
-        except Exception as e:
-            if ("503" in str(e) or "UNAVAILABLE" in str(e)) and attempt < max_retries - 1:
-                time.sleep(3)
-                continue
-            return jsonify({"error": str(e)}), 500
+    try:
+        response = gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=[types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"), build_prompt(mode)],
+            config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0.2)
+        )
+        result = extract_json(response.text)
+        with db_connect() as conn:
+            conn.execute("INSERT INTO analyses (created_at, mode, original_filename, mime_type, result_text, signal, asset, timeframe) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", 
+                         (datetime.now(timezone.utc).isoformat(), mode, upload.filename, "image/jpeg", json.dumps(result), result.get("signal"), result.get("asset"), result.get("timeframe")))
+            conn.commit()
+        return jsonify({"result": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# --- ROUTE CHAT AVEC NEWS ET ACCÈS AUX DONNÉES ---
+# --- ROUTE CHAT INTERACTIVE (CORRIGÉE) ---
 @app.route("/api/chat", methods=["POST"])
 @admin_required
 def chat():
@@ -212,34 +206,59 @@ def chat():
     if not user_message: return jsonify({"error": "Message vide."}), 400
     
     try:
-        # On donne à l'IA accès à Google Search ET à la fonction de lecture des analyses
+        # On prépare les outils
+        tools = [
+            types.Tool(google_search=types.GoogleSearch()),
+            types.Tool(function_declarations=[outil_analyses])
+        ]
+        
         config = types.GenerateContentConfig(
-            tools=[
-                {"google_search": {}}, # Accès aux news
-                lire_dernieres_analyses # Accès à la base de données
-            ],
+            tools=tools,
             temperature=0.3
         )
         
         prompt = (
             "Tu es ARKAS, un assistant expert en trading. "
             "Tu as accès aux dernières analyses du site via tes outils. "
-            "Si on te demande des news ou le calendrier économique, utilise la recherche Google "
-            "pour vérifier les impacts (NFP, CPI, FED, etc.). "
-            "Sois direct et donne des avertissements clairs si une news majeure approche. "
+            "Si on te demande des news ou le calendrier économique, utilise la recherche Google. "
+            "Sois direct et donne des avertissements clairs. "
             "Question : " + user_message
         )
         
+        # Premier appel à l'IA
         response = gemini_client.models.generate_content(
             model=GEMINI_MODEL, 
             contents=[prompt],
             config=config
         )
+        
+        # Vérification si l'IA a décidé d'appeler notre fonction
+        part = response.candidates[0].content.parts[0]
+        if hasattr(part, 'function_call') and part.function_call:
+            fc = part.function_call
+            if fc.name == "lire_dernieres_analyses":
+                # On exécute la fonction
+                args = dict(fc.args) if fc.args else {}
+                resultat = lire_dernieres_analyses(**args)
+                
+                # On renvoie le résultat à l'IA pour qu'elle formule la réponse finale
+                response = gemini_client.models.generate_content(
+                    model=GEMINI_MODEL,
+                    contents=[
+                        prompt,
+                        response.candidates[0].content,
+                        types.Part.from_function_response(
+                            name=fc.name,
+                            response={"result": resultat}
+                        )
+                    ],
+                    config=config
+                )
+        
         return jsonify({"reply": response.text})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# --- ROUTE JOURNAL MANUEL ---
 @app.route("/api/journal", methods=["POST"])
 @admin_required
 def journal():
@@ -250,8 +269,7 @@ def journal():
                 INSERT INTO analyses (created_at, mode, original_filename, mime_type, result_text, signal, asset, timeframe) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                datetime.now(timezone.utc).isoformat(), 
-                "manuel", "journal", "text/plain", 
+                datetime.now(timezone.utc).isoformat(), "manuel", "journal", "text/plain", 
                 json.dumps({"commentaire": data.get('commentaire')}), 
                 data.get('signal'), data.get('asset'), "Manuel"
             ))
@@ -259,13 +277,6 @@ def journal():
         return jsonify({"status": "ok"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-@app.route("/api/history")
-@admin_required
-def history():
-    with db_connect() as conn:
-        rows = conn.execute("SELECT * FROM analyses ORDER BY id DESC LIMIT 50").fetchall()
-    return jsonify({"items": [dict(row) for row in rows]})
 
 @app.route("/health")
 def health(): return jsonify({"status": "ok"})
