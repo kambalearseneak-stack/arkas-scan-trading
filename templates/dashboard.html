@@ -1,859 +1,339 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token }}">
-  <meta name="theme-color" content="#07111f">
   <title>Terminal Pro · ARKAS SCAN AI</title>
   <style>
-    :root {
-      --bg:#07111f; --panel:rgba(16,29,45,.85); --panel2:rgba(18,37,58,.86);
-      --line:rgba(255,255,255,.1); --muted:#94a3b8; --text:#f8fafc;
-      --blue:#0ea5e9; --blue-light:#38bdf8; --gold:#facc15;
-      --green:#10b981; --red:#ef4444; --amber:#f59e0b;
-      --radius:15px; --shadow:0 10px 30px rgba(0,0,0,.5);
-    }
-    * { box-sizing: border-box; }
-    html { height: 100%; }
+    /* --- ARRIÈRE-PLAN --- */
     body {
-      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-      margin: 0; padding: 0; color: var(--text); min-height: 100vh;
-      background: url('/akas.jpg') no-repeat center center fixed;
-      background-size: cover; display: flex; position: relative; z-index: 0;
+      font-family: 'Inter', sans-serif; margin: 0; padding: 0; height: 100vh;
+      background: url('/akas.jpg') no-repeat center center fixed; background-size: cover;
+      display: flex; flex-direction: column; color: white; overflow: hidden;
     }
-    body::before {
-      content: ""; position: fixed; inset: 0;
-      background: rgba(7,17,31,.75); backdrop-filter: blur(8px);
-      z-index: -1; pointer-events: none;
-    }
-    button, input, select { font: inherit; }
-    button { cursor: pointer; }
+    body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(7, 17, 31, 0.7); backdrop-filter: blur(8px); z-index: -1; }
 
-    /* --- BARRE LATÉRALE --- */
-    .sidebar {
-      width: 260px; background: var(--panel); backdrop-filter: blur(15px);
-      border-right: 1px solid var(--line); display: flex; flex-direction: column;
-      padding: 20px 0; height: 100vh; position: fixed; inset: 0 auto 0 0; z-index: 20;
-    }
-    .brand-logo {
-      font-size: 1.3rem; font-weight: 800; color: var(--gold);
-      text-align: center; margin-bottom: 30px; letter-spacing: 1px;
-    }
-    .brand-logo span { color: var(--blue); }
-    .nav-menu { display: flex; flex-direction: column; gap: 5px; padding: 0 15px; }
-    .nav-btn {
-      background: transparent; border: none; color: var(--muted);
-      padding: 15px 20px; text-align: left; border-radius: 8px;
-      font-size: .95rem; font-weight: 600; transition: .3s;
-      display: flex; align-items: center; gap: 10px;
-      border-left: 3px solid transparent;
-    }
-    .nav-btn:hover { background: rgba(255,255,255,.05); color: var(--text); }
-    .nav-btn.active {
-      background: linear-gradient(90deg, rgba(14,165,233,.2), transparent);
-      color: var(--blue); border-left-color: var(--blue);
-    }
-    .nav-btn:focus-visible, .logout-btn:focus-visible, .btn:focus-visible {
-      outline: 2px solid var(--gold); outline-offset: 2px;
-    }
-    .sidebar-footer {
-      margin-top: auto; padding: 20px; font-size: .8rem;
-      color: #64748b; text-align: center; border-top: 1px solid var(--line);
-    }
-    .logout-btn {
-      color: var(--red); font-weight: 700; background: none;
-      border: none; cursor: pointer; margin-top: 8px; padding: 6px 10px;
-      border-radius: 6px;
-    }
-    .logout-btn:hover { background: rgba(239,68,68,.1); }
-
-    /* --- CONTENU PRINCIPAL --- */
-    .main-content {
-      margin-left: 260px; flex: 1; padding: 30px;
-      max-width: 1400px; width: 100%;
-    }
-    .section-header {
+    /* --- HEADER --- */
+    .topbar {
       display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 20px; gap: 14px; flex-wrap: wrap;
+      padding: 10px 20px; background: rgba(16, 29, 45, 0.85); backdrop-filter: blur(15px);
+      border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 100;
     }
-    .section-header h1 {
-      margin: 0; font-size: clamp(1.4rem, 2.5vw, 1.8rem); color: var(--gold);
+    .brand-logo { font-size: 1.2rem; font-weight: bold; color: #facc15; }
+    .brand-logo span { color: #0ea5e9; }
+    
+    .tabs-nav { display: flex; gap: 10px; }
+    .nav-tab {
+      background: transparent; border: none; color: #94a3b8; padding: 10px 20px;
+      border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s;
     }
-    .status-pill {
-      border: 1px solid rgba(16,185,129,.35);
-      background: rgba(16,185,129,.09); color: #6ee7b7;
-      border-radius: 99px; padding: 8px 12px;
-      font-size: .78rem; white-space: nowrap;
-    }
+    .nav-tab:hover { background: rgba(255,255,255,0.05); color: white; }
+    .nav-tab.active { background: #0ea5e9; color: white; }
+    
+    .logout-btn { background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
+
+    /* --- CONTENU --- */
+    .main-area { flex: 1; position: relative; display: flex; flex-direction: column; }
+    .tab-content { display: none; width: 100%; height: 100%; }
+    .tab-content.active { display: flex; flex-direction: column; }
+
+    /* Onglet 1 : TradingView (Plein écran) */
+    #tradingview_chart { width: 100%; height: 100%; border: none; }
+
+    /* Onglet 2 : Scanner */
+    #tab-scanner { padding: 20px; overflow-y: auto; }
+    .scanner-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1400px; margin: 0 auto; width: 100%; }
+    
     .glass-panel {
-      background: var(--panel); backdrop-filter: blur(15px);
-      border: 1px solid var(--line); border-radius: var(--radius);
-      padding: 25px; box-shadow: var(--shadow); margin-bottom: 20px;
+      background: rgba(16, 29, 45, 0.85); backdrop-filter: blur(15px);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
 
-    /* --- ONGLETS --- */
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    /* --- TRADINGVIEW --- */
-    #tradingview_chart {
-      height: min(68vh, 680px); min-height: 380px;
-      border-radius: 10px; overflow: hidden;
-      border: 1px solid var(--line);
-    }
-    .hint {
-      margin-top: 15px; font-size: .85rem; color: var(--muted);
-      background: rgba(14,165,233,.1); padding: 15px;
-      border-radius: 8px; border-left: 3px solid var(--blue);
-      line-height: 1.55;
-    }
-    .hint b { color: var(--blue-light); }
-
-    /* --- SCANNER --- */
-    .scanner-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;
-    }
+    /* Zone d'upload */
     .upload-zone {
-      border: 2px dashed rgba(14,165,233,.5);
-      background: rgba(14,165,233,.05);
-      min-height: 320px; height: 320px;
-      border-radius: 12px; display: flex; flex-direction: column;
-      justify-content: center; align-items: center; cursor: pointer;
-      position: relative; overflow: hidden; transition: .3s;
-      text-align: center; padding: 15px;
+      height: 350px; border: 2px dashed rgba(14, 165, 233, 0.5);
+      background: rgba(14, 165, 233, 0.05); border-radius: 12px;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      cursor: pointer; position: relative; overflow: hidden; transition: 0.3s;
     }
-    .upload-zone:hover { background: rgba(14,165,233,.1); border-color: var(--blue); }
-    .upload-zone img {
-      display: none; max-width: 100%; max-height: 100%;
-      object-fit: contain; border-radius: 8px;
-    }
-    .upload-text { color: var(--muted); line-height: 1.6; }
-    .upload-text .big { font-size: 2.2rem; margin: 0 0 8px; }
-
-    /* Effet Scan */
-    .scan-line {
-      position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-      background: var(--blue-light);
-      box-shadow: 0 0 15px 4px rgba(56,189,248,.8);
-      display: none; z-index: 10;
-    }
+    .upload-zone:hover { background: rgba(14, 165, 233, 0.1); border-color: #0ea5e9; }
+    .upload-zone img { max-width: 100%; max-height: 100%; object-fit: contain; display: none; }
+    .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #38bdf8; box-shadow: 0 0 15px 4px rgba(56, 189, 248, 0.8); display: none; z-index: 10; }
     .scan-line.active { display: block; animation: scanning 2s linear infinite; }
-    @keyframes scanning {
-      0% { top: 0; opacity: 0; }
-      10% { opacity: 1; }
-      90% { opacity: 1; }
-      100% { top: 100%; opacity: 0; }
-    }
+    @keyframes scanning { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
 
-    /* Boutons */
-    .btn {
-      padding: 12px 20px; border: none; border-radius: 8px;
-      font-weight: 700; color: white; transition: .3s; width: 100%;
-    }
-    .btn:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
-    .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
-    .btn-primary { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+    /* Résultats */
+    .result-card { display: none; }
+    .signal-banner { display: flex; justify-content: space-between; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1.2rem; margin-bottom: 15px; }
+    .bg-buy { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
+    .bg-sell { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+    .bg-wait { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b; }
+    
+    .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+    .data-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; border-left: 3px solid #0ea5e9; }
+    .data-item small { display: block; color: #94a3b8; font-size: 0.7rem; }
+    .data-item b { font-size: 0.95rem; }
 
-    /* Rangée sélecteur + bouton */
-    .action-row {
-      display: flex; gap: 10px; margin-top: 15px; align-items: stretch;
-    }
-    .field-select {
-      flex: 1; padding: 12px;
-      background: rgba(0,0,0,.3); color: white;
-      border: 1px solid var(--line); border-radius: 8px;
-      min-width: 0;
-    }
-    .field-select:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+    .scenario-box { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; margin-top: 5px; font-size: 0.85rem; border-left: 3px solid #facc15; }
+    .box-pro { background: rgba(16, 185, 129, 0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #10b981; margin-top: 5px; font-size: 0.85rem; }
+    .box-con { background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #ef4444; margin-top: 5px; font-size: 0.85rem; }
+    .box-advice { background: rgba(14, 165, 233, 0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #0ea5e9; margin-top: 10px; font-size: 0.85rem; font-style: italic; }
 
-    /* Gestion du risque */
-    .risk-panel {
-      margin-top: 16px; background: rgba(250,204,21,.055);
-      border: 1px solid rgba(250,204,21,.2);
-      border-radius: 12px; padding: 14px;
+    /* --- AGENT AI FLOTTANT --- */
+    .chat-bubble {
+      position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px;
+      background: linear-gradient(135deg, #0ea5e9, #0284c7); border-radius: 50%;
+      display: flex; justify-content: center; align-items: center; cursor: pointer;
+      box-shadow: 0 5px 20px rgba(14, 165, 233, 0.5); z-index: 1000;
+      font-size: 1.5rem; transition: 0.3s;
     }
-    .risk-panel h3 { margin: 0 0 10px; color: var(--gold); font-size: 1rem; }
-    .risk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .field-label {
-      display: block; color: var(--muted);
-      font-size: .78rem; margin: 0 0 6px;
+    .chat-bubble:hover { transform: scale(1.1); }
+    
+    .chat-window {
+      position: fixed; bottom: 90px; right: 20px; width: 350px; height: 450px;
+      background: rgba(16, 29, 45, 0.95); backdrop-filter: blur(15px);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 15px;
+      display: none; flex-direction: column; z-index: 1000;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden;
     }
-    .risk-input {
-      width: 100%; background: #0b1a2b; color: white;
-      border: 1px solid var(--line); border-radius: 8px; padding: 10px;
-    }
-    .risk-input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
-    .risk-value { font-weight: 800; color: var(--gold); font-size: 1.1rem; }
-    .risk-note {
-      margin-top: 12px; padding: 11px;
-      background: rgba(250,204,21,.07);
-      border: 1px solid rgba(250,204,21,.18);
-      border-radius: 8px; font-size: .82rem; color: #fde68a;
-      line-height: 1.5;
-    }
+    .chat-header { background: rgba(14, 165, 233, 0.2); padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+    .chat-header button { background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem; }
+    .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 0.9rem; }
+    .msg { padding: 8px 12px; border-radius: 8px; max-width: 80%; line-height: 1.4; }
+    .msg.user { background: #0ea5e9; align-self: flex-end; }
+    .msg.bot { background: #1e293b; align-self: flex-start; }
+    .chat-input-area { padding: 10px; display: flex; gap: 5px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .chat-input-area input { flex: 1; padding: 10px; border-radius: 6px; border: none; background: rgba(0,0,0,0.3); color: white; }
+    .chat-input-area button { padding: 10px 15px; background: #0ea5e9; border: none; border-radius: 6px; color: white; cursor: pointer; }
 
-    /* --- RÉSULTATS --- */
-    .result-empty {
-      display: flex; align-items: center; justify-content: center;
-      min-height: 320px; text-align: center;
-      color: var(--muted); font-size: .9rem; line-height: 1.7;
-    }
-    .signal-banner {
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 10px; padding: 15px; border-radius: 10px;
-      font-weight: 800; font-size: 1.15rem; margin-bottom: 15px;
-    }
-    .bg-buy  { background: rgba(16,185,129,.2); color: #6ee7b7; border: 1px solid rgba(16,185,129,.6); }
-    .bg-sell { background: rgba(239,68,68,.2);  color: #fca5a5; border: 1px solid rgba(239,68,68,.6); }
-    .bg-wait { background: rgba(245,158,11,.2); color: #fcd34d; border: 1px solid rgba(245,158,11,.6); }
-
-    .data-grid {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 10px; margin-bottom: 15px;
-    }
-    .data-item {
-      background: rgba(255,255,255,.05); padding: 12px;
-      border-radius: 8px; border-left: 3px solid var(--blue);
-      min-width: 0;
-    }
-    .data-item small {
-      display: block; color: var(--muted);
-      font-size: .7rem; margin-bottom: 4px; letter-spacing: .5px;
-    }
-    .data-item b { font-size: 1rem; overflow-wrap: anywhere; }
-
-    .result-section { margin-bottom: 15px; }
-    .result-section > b { color: var(--blue-light); display: block; margin-bottom: 6px; }
-
-    .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
-    .chip {
-      background: rgba(255,255,255,.1); padding: 5px 9px;
-      border-radius: 5px; font-size: .8rem; overflow-wrap: anywhere;
-    }
-    .chip.target { background: rgba(16,185,129,.2); color: #6ee7b7; }
-    .chip.empty { background: transparent; color: var(--muted); font-style: italic; }
-
-    .box-pro, .box-con, .box-advice, .scenario-box {
-      padding: 12px; border-radius: 8px;
-      font-size: .9rem; line-height: 1.55;
-      margin-bottom: 10px; overflow-wrap: anywhere;
-    }
-    .box-pro    { background: rgba(16,185,129,.1); border-left: 3px solid var(--green); }
-    .box-con    { background: rgba(239,68,68,.1);  border-left: 3px solid var(--red); }
-    .box-advice { background: rgba(14,165,233,.1); border-left: 3px solid var(--blue); font-style: italic; }
-    .scenario-box { background: rgba(255,255,255,.05); border-left: 3px solid var(--gold); }
-    .scenario-box.alt { border-left-color: var(--blue); }
-
-    .error {
-      color: #fca5a5; background: rgba(127,29,29,.25);
-      padding: 10px; border-radius: 8px; margin-top: 12px;
-      display: none; font-size: .85rem;
-    }
-    .micro { font-size: .76rem; color: var(--muted); line-height: 1.5; }
-
-    /* Historique */
-    .history-toolbar {
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
-    }
-    .btn-danger {
-      background: #7f1d1d; color: white; padding: 10px 16px;
-      border: none; border-radius: 8px; font-weight: 700;
-      width: auto;
-    }
-    .btn-danger:hover { filter: brightness(1.15); }
-    .history-item {
-      padding: 14px; border: 1px solid var(--line);
-      background: rgba(255,255,255,.035);
-      border-radius: 10px; margin-top: 10px;
-    }
-    .history-head {
-      display: flex; justify-content: space-between;
-      gap: 10px; flex-wrap: wrap; align-items: center;
-    }
-    .history-head b { color: var(--gold); }
-    .history-item p { color: #c4d2e1; font-size: .85rem; margin: 8px 0 0; }
-    .audit-list {
-      padding-left: 18px; color: #cbd5e1;
-      font-size: .82rem; line-height: 1.7;
-    }
-    .empty { color: var(--muted); font-size: .88rem; font-style: italic; }
-
-    /* --- RESPONSIVE --- */
-    @media (max-width: 980px) {
-      .sidebar { width: 220px; }
-      .main-content { margin-left: 220px; padding: 22px; }
-      .scanner-grid { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 700px) {
-      body { display: block; }
-      .sidebar {
-        position: relative; width: 100%; height: auto;
-        padding: 14px 12px 10px; border-right: 0;
-        border-bottom: 1px solid var(--line);
-      }
-      .brand-logo { margin: 0 0 16px; }
-      .nav-menu {
-        flex-direction: row; padding: 0;
-        display: grid; grid-template-columns: repeat(3, minmax(0,1fr));
-        gap: 6px;
-      }
-      .nav-btn {
-        text-align: center; justify-content: center;
-        padding: 11px 6px; font-size: .78rem;
-        border-left: 0; border-bottom: 3px solid transparent;
-      }
-      .nav-btn.active { border-left: 0; border-bottom-color: var(--blue); }
-      .sidebar-footer { display: none; }
-      .main-content { margin: 0; padding: 16px; max-width: 100%; }
-      .section-header { flex-direction: column; align-items: flex-start; }
-      .status-pill { white-space: normal; }
-      .glass-panel { padding: 16px; }
-      #tradingview_chart { height: 58vh; min-height: 340px; }
-      .upload-zone { min-height: 240px; height: 240px; }
-      .action-row { flex-direction: column; }
-      .risk-grid { grid-template-columns: 1fr; }
-      .data-grid { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 900px) {
+      .scanner-layout { grid-template-columns: 1fr; }
+      .tabs-nav { gap: 5px; }
+      .nav-tab { padding: 8px 12px; font-size: 0.8rem; }
     }
   </style>
 </head>
 <body>
 
-  <aside class="sidebar">
-    <div class="brand-logo">ARKAS <span>AI</span></div>
-    <nav class="nav-menu">
-      <button class="nav-btn active" type="button" onclick="switchTab('tradingview', this)">📈 Marché Direct</button>
-      <button class="nav-btn" type="button" onclick="switchTab('scanner', this)">🔍 Scanner / Audit</button>
-      <button class="nav-btn" type="button" onclick="switchTab('history', this)">🗂 Historique</button>
+  <!-- HEADER -->
+  <header class="topbar">
+    <div class="brand-logo">ARKAS <span>SCAN AI</span></div>
+    <nav class="tabs-nav">
+      <button class="nav-tab active" onclick="switchTab('tradingview', this)">📈 Marché</button>
+      <button class="nav-tab" onclick="switchTab('scanner', this)">🔍 Scanner / Audit</button>
     </nav>
-    <div class="sidebar-footer">
-      <p>Support :<br><b>0838424263</b></p>
-      <form method="post" action="/logout">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button type="submit" class="logout-btn">Déconnexion</button>
-      </form>
+    <form method="post" action="/logout"><button class="logout-btn">Déconnexion</button></form>
+  </header>
+
+  <!-- CONTENU -->
+  <main class="main-area">
+    
+    <!-- ONGLET 1 : TRADINGVIEW -->
+    <div id="tab-tradingview" class="tab-content active">
+      <div id="tradingview_chart"></div>
     </div>
-  </aside>
-
-  <main class="main-content">
-
-    <!-- ONGLET 1 : MARCHÉ DIRECT -->
-    <section id="tab-tradingview" class="tab-content active">
-      <div class="section-header">
-        <h1>Graphique en direct</h1>
-        <div class="status-pill">● Interface prête · Analyse sur demande</div>
-      </div>
-      <div class="glass-panel">
-        <div id="tradingview_chart"></div>
-        <div class="hint">
-          <b>💡 Comment scanner ce graphique ?</b><br>
-          Cliquez sur l'icône <b>Appareil photo</b> en haut à droite du graphique, téléchargez l'image, puis allez dans l'onglet <b>« Scanner / Audit »</b> pour l'importer.
-        </div>
-      </div>
-    </section>
 
     <!-- ONGLET 2 : SCANNER -->
-    <section id="tab-scanner" class="tab-content">
-      <div class="section-header">
-        <h1>Scanner & Audit</h1>
-      </div>
-
-      <div class="scanner-grid">
-
-        <!-- Colonne gauche : importation -->
+    <div id="tab-scanner" class="tab-content">
+      <div class="scanner-layout">
+        
         <div class="glass-panel">
-          <h3 style="margin-top:0; color:var(--gold)">1. Importer l'image</h3>
-
-          <div class="upload-zone" id="uploadZone" role="button" tabindex="0" aria-label="Importer une image de graphique">
+          <h3 style="margin-top:0; color:#facc15;">Importer l'image</h3>
+          <div class="upload-zone" id="uploadZone">
             <div class="scan-line" id="scanLine"></div>
-            <div class="upload-text" id="uploadText">
-              <p class="big">📸</p>
-              <p style="margin:0"><b>Cliquez pour importer une capture</b></p>
-              <p class="micro" style="margin-top:6px">PNG, JPG ou WEBP · 12 Mo max</p>
+            <div id="uploadText" style="text-align:center;">
+              <p style="font-size:2rem; margin:0;">📸</p>
+              <p>Cliquez pour importer</p>
             </div>
-            <img id="preview" alt="Aperçu du graphique">
+            <img id="preview">
+            <input type="file" id="chartFile" accept="image/*" style="display:none;">
           </div>
-          <input type="file" id="chartFile" accept="image/png,image/jpeg,image/webp,image/*" hidden>
-
-          <div class="action-row">
-            <select id="modeSelect" class="field-select" aria-label="Mode d'analyse">
+          
+          <div style="display:flex; gap:10px; margin-top:15px;">
+            <select id="modeSelect" style="flex:1; padding:10px; border-radius:6px; background:rgba(0,0,0,0.3); color:white; border:1px solid rgba(255,255,255,0.1);">
               <option value="scan">🚀 Générer un signal</option>
-              <option value="audit">🔎 Auditer mon analyse</option>
+              <option value="audit">🔎 Auditer</option>
             </select>
-            <button class="btn btn-primary" id="analyzeBtn" type="button" style="flex:1; margin-top:0">Lancer l'IA</button>
-          </div>
-
-          <div id="errorBox" class="error" role="alert"></div>
-
-          <div class="risk-panel">
-            <h3>⚖️ Gestion du risque</h3>
-            <div class="risk-grid">
-              <div>
-                <label class="field-label" for="capitalInput">Capital (USD)</label>
-                <input id="capitalInput" class="risk-input" type="number" min="0" step="0.01" value="250">
-              </div>
-              <div>
-                <label class="field-label" for="riskInput">Risque / trade (%)</label>
-                <input id="riskInput" class="risk-input" type="number" min="0.01" max="100" step="0.01" value="0.5">
-              </div>
-            </div>
-            <div style="margin-top:12px">
-              Perte max théorique : <span class="risk-value" id="riskBudget">$1.25</span>
-              <span class="micro">(indicatif — ne remplace pas le calcul de lot)</span>
-            </div>
+            <button id="analyzeBtn" style="flex:1; padding:10px; border:none; border-radius:6px; background:#0ea5e9; color:white; font-weight:bold; cursor:pointer;">Lancer l'IA</button>
           </div>
         </div>
 
-        <!-- Colonne droite : résultats -->
-        <div class="glass-panel" id="resultPanel">
-          <h3 style="margin-top:0; color:var(--gold)">2. Rapport de l'IA</h3>
-
-          <div class="result-empty" id="resultEmpty">
-            📊 Aucune analyse pour le moment.<br>
-            Importez une capture et lancez l'IA pour voir le rapport ici.
+        <div class="glass-panel result-card" id="resultCard">
+          <div id="signalBanner" class="signal-banner bg-wait">
+            <span id="signalText">WAIT</span>
+            <span id="confidence">0/100</span>
           </div>
-
-          <div id="resultContent" style="display:none">
-            <div id="signalBanner" class="signal-banner bg-wait">
-              <span id="signalText">WAIT</span>
-              <span id="confidence">0/100</span>
-            </div>
-
-            <div class="data-grid">
-              <div class="data-item"><small>ACTIF</small><b id="rAsset">—</b></div>
-              <div class="data-item"><small>TIMEFRAME</small><b id="rTimeframe">—</b></div>
-              <div class="data-item"><small>TENDANCE</small><b id="rTrend">—</b></div>
-              <div class="data-item"><small>ENTRÉE</small><b id="rEntry">—</b></div>
-              <div class="data-item"><small>STOP LOSS</small><b id="rStop">—</b></div>
-              <div class="data-item"><small>STRUCTURE</small><b id="rStructure" style="font-size:.85rem">—</b></div>
-            </div>
-
-            <div class="result-section">
-              <b>📌 Zones & Objectifs</b>
-              <div class="chips" id="rZones"></div>
-              <div class="chips" id="rTargets"></div>
-            </div>
-
-            <div class="result-section">
-              <b>⚖️ Bilan de l'analyse</b>
-              <div id="rPointsForts" class="box-pro"></div>
-              <div id="rPointsCritiques" class="box-con"></div>
-            </div>
-
-            <div class="result-section">
-              <b>📋 Plan d'action</b>
-              <div id="rScenarios"></div>
-            </div>
-
-            <div class="box-advice" id="rConseil"></div>
-
-            <div class="risk-note" id="resultRisk">
-              Budget de risque indicatif : 0.5% du capital = 1.25 USD.
-            </div>
-
-            <p class="micro" style="margin-top:12px">
-              Le signal est une analyse assistée, pas une garantie de résultat ni un ordre à exécuter automatiquement.
-            </p>
+          <div class="data-grid">
+            <div class="data-item"><small>ACTIF</small><b id="rAsset">—</b></div>
+            <div class="data-item"><small>TIMEFRAME</small><b id="rTimeframe">—</b></div>
+            <div class="data-item"><small>TENDANCE</small><b id="rTrend">—</b></div>
+            <div class="data-item"><small>ENTRÉE</small><b id="rEntry">—</b></div>
+            <div class="data-item"><small>STOP LOSS</small><b id="rStop">—</b></div>
+            <div class="data-item"><small>STRUCTURE</small><b id="rStructure">—</b></div>
           </div>
+          <div style="margin-bottom:10px;">
+            <b style="color:#0ea5e9;">📌 Zones & TPs</b>
+            <div id="rZones" style="display:flex; flex-wrap:wrap; gap:5px; margin-top:5px;"></div>
+            <div id="rTargets" style="display:flex; flex-wrap:wrap; gap:5px; margin-top:5px;"></div>
+          </div>
+          <div style="margin-bottom:10px;">
+            <div id="rPointsForts" class="box-pro"></div>
+            <div id="rPointsCritiques" class="box-con"></div>
+          </div>
+          <div id="rScenarios" style="margin-bottom:10px;"></div>
+          <div id="rConseil" class="box-advice"></div>
         </div>
 
       </div>
-    </section>
-
-    <!-- ONGLET 3 : HISTORIQUE -->
-    <section id="tab-history" class="tab-content">
-      <div class="section-header">
-        <h1>Historique</h1>
-        <button class="btn btn-danger" id="clearHistoryBtn" type="button">Effacer l'historique</button>
-      </div>
-      <div class="glass-panel">
-        <p class="micro">
-          Les analyses sont enregistrées dans le stockage local de cet appareil (pas d'envoi serveur).
-        </p>
-        <div id="historyList"><p class="empty">Aucune analyse enregistrée pour le moment.</p></div>
-        <h3 style="margin:24px 0 8px; color:var(--blue-light)">Journal des événements</h3>
-        <ol class="audit-list" id="auditList"><li>Aucun événement pour le moment.</li></ol>
-      </div>
-    </section>
-
+    </div>
   </main>
 
+  <!-- AGENT AI FLOTTANT -->
+  <div class="chat-bubble" onclick="toggleChat()">🤖</div>
+  
+  <div class="chat-window" id="chatWindow">
+    <div class="chat-header">
+      <span>🤖 ARKAS - Agent AI</span>
+      <button onclick="toggleChat()">×</button>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="msg bot">Bonjour ! Je suis ARKAS. Posez-moi une question sur le trading, une stratégie, ou demandez-moi de l'aide.</div>
+    </div>
+    <div class="chat-input-area">
+      <input type="text" id="chatInput" placeholder="Votre question..." onkeypress="if(event.key==='Enter') sendMessage()">
+      <button onclick="sendMessage()">Envoyer</button>
+    </div>
+  </div>
+
+  <!-- SCRIPT TRADINGVIEW -->
   <script src="https://s3.tradingview.com/tv.js"></script>
   <script>
-    'use strict';
+    // --- INITIALISATION TRADINGVIEW PLEIN ÉCRAN ---
+    new TradingView.widget({
+      "container_id": "tradingview_chart",
+      "autosize": true,
+      "symbol": "FX:XAUUSD",
+      "interval": "60",
+      "timezone": "Etc/UTC",
+      "theme": "dark",
+      "style": "1",
+      "locale": "fr",
+      "toolbar_bg": "rgba(16, 29, 45, 0.9)",
+      "enable_publishing": false,
+      "withdateranges": true,
+      "hide_side_toolbar": false,
+      "allow_symbol_change": true,
+      "save_image": true,
+      "studies": ["Volume@tv-basicstudies"]
+    });
 
-    const $ = (id) => document.getElementById(id);
-    const HISTORY_KEY = 'arkas_scan_ai_history_v2';
-    const AUDIT_KEY = 'arkas_scan_ai_audit_v2';
-
-    let selectedFile = null;
-    let previewUrl = null;
-
-    /* ---------- TradingView (chargement robuste) ---------- */
-    function initTradingView() {
-      const container = $('tradingview_chart');
-      if (!window.TradingView) {
-        container.textContent = 'TradingView ne peut pas être chargé. Vérifiez votre connexion.';
-        return;
-      }
-      new window.TradingView.widget({
-        container_id: 'tradingview_chart',
-        autosize: true,
-        symbol: 'FX:XAUUSD',
-        interval: '60',
-        timezone: 'Etc/UTC',
-        theme: 'dark',
-        style: '1',
-        locale: 'fr',
-        toolbar_bg: 'rgba(16, 29, 45, 0.9)',
-        enable_publishing: false,
-        withdateranges: true,
-        hide_side_toolbar: false,
-        allow_symbol_change: true,
-        save_image: true,
-        studies: ['Volume@tv-basicstudies']
-      });
-    }
-
-    /* ---------- Stockage local ---------- */
-    function readStore(key) {
-      try {
-        const v = JSON.parse(localStorage.getItem(key) || '[]');
-        return Array.isArray(v) ? v : [];
-      } catch (_) { return []; }
-    }
-    function writeStore(key, value) {
-      try { localStorage.setItem(key, JSON.stringify(value)); }
-      catch (_) { showError("Stockage local indisponible ou plein. L'analyse s'affiche mais ne sera pas sauvegardée."); }
-    }
-
-    /* ---------- Audit ---------- */
-    function audit(message, details = '') {
-      const entries = readStore(AUDIT_KEY);
-      entries.unshift({ at: new Date().toISOString(), message, details });
-      writeStore(AUDIT_KEY, entries.slice(0, 100));
-      renderAudit();
-    }
-
-    /* ---------- Erreurs ---------- */
-    function showError(msg) {
-      const box = $('errorBox');
-      box.textContent = msg;
-      box.style.display = 'block';
-    }
-    function clearError() {
-      const box = $('errorBox');
-      box.textContent = '';
-      box.style.display = 'none';
-    }
-
-    /* ---------- Navigation ---------- */
+    // --- NAVIGATION ---
     function switchTab(tabId, btnElement) {
-      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      const tab = $('tab-' + tabId);
-      if (tab) tab.classList.add('active');
-      if (btnElement) btnElement.classList.add('active');
-      if (tabId === 'history') renderHistory();
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('tab-' + tabId).classList.add('active');
+      btnElement.classList.add('active');
     }
-    window.switchTab = switchTab;
 
-    /* ---------- Risque ---------- */
-    function computeRisk() {
-      const capital = Math.max(0, Number($('capitalInput').value) || 0);
-      const pct = Math.max(0, Number($('riskInput').value) || 0);
-      return { capital, pct, amount: capital * pct / 100 };
-    }
-    function updateRisk() {
-      const { pct, amount } = computeRisk();
-      $('riskBudget').textContent = '$' + amount.toFixed(2);
-      const note = $('resultRisk');
-      if (note) {
-        note.textContent = `Budget de risque indicatif : ${pct}% du capital = ${amount.toFixed(2)} USD. ` +
-          `Le lot exact dépend du broker (valeur du point, taille du contrat, distance du stop).`;
-      }
-    }
-    $('capitalInput').addEventListener('input', updateRisk);
-    $('riskInput').addEventListener('input', updateRisk);
-    updateRisk();
-
-    /* ---------- Import d'image ---------- */
-    function setFile(file) {
-      if (!file) return;
-      if (!file.type.startsWith('image/')) { showError("Le fichier sélectionné n'est pas une image."); return; }
-      if (file.size > 12 * 1024 * 1024) { showError('Image trop volumineuse : limite de 12 Mo.'); return; }
-      clearError();
-      selectedFile = file;
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      previewUrl = URL.createObjectURL(file);
-      $('preview').src = previewUrl;
-      $('preview').style.display = 'block';
-      $('uploadText').style.display = 'none';
-      audit('Image sélectionnée', `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)} Mo`);
-    }
+    // --- LOGIQUE SCANNER ---
+    const $ = (id) => document.getElementById(id);
+    
     $('uploadZone').addEventListener('click', () => $('chartFile').click());
-    $('uploadZone').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('chartFile').click(); }
-    });
-    $('chartFile').addEventListener('change', (e) => setFile(e.target.files[0]));
-    $('uploadZone').addEventListener('dragover', (e) => { e.preventDefault(); $('uploadZone').style.borderColor = 'var(--blue)'; });
-    $('uploadZone').addEventListener('dragleave', () => { $('uploadZone').style.borderColor = ''; });
-    $('uploadZone').addEventListener('drop', (e) => {
-      e.preventDefault();
-      $('uploadZone').style.borderColor = '';
-      setFile(e.dataTransfer.files[0]);
+    $('chartFile').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        $('preview').src = URL.createObjectURL(file);
+        $('preview').style.display = 'block';
+        $('uploadText').style.display = 'none';
+      }
     });
 
-    /* ---------- Helpers de rendu (sûrs — pas d'innerHTML) ---------- */
-    function safeText(value, fallback = '—') {
-      if (value === null || value === undefined || value === '') return fallback;
-      if (Array.isArray(value)) return value.map(String).join(', ');
-      if (typeof value === 'object') return JSON.stringify(value);
-      return String(value);
-    }
-    function setText(id, value, fallback = '—') {
-      const el = $(id); if (el) el.textContent = safeText(value, fallback);
-    }
-    function renderChips(id, values, isTarget = false) {
-      const root = $(id); if (!root) return;
-      root.replaceChildren();
-      const arr = Array.isArray(values) ? values : (values ? [values] : []);
-      if (!arr.length) {
-        const s = document.createElement('span');
-        s.className = 'chip empty';
-        s.textContent = 'Non précisé';
-        root.appendChild(s);
-        return;
-      }
-      arr.forEach((v) => {
-        const s = document.createElement('span');
-        s.className = 'chip' + (isTarget ? ' target' : '');
-        s.textContent = safeText(v);
-        root.appendChild(s);
-      });
-    }
-    function renderLines(id, title, values, emptyMsg) {
-      const root = $(id); if (!root) return;
-      root.replaceChildren();
-      const b = document.createElement('b');
-      b.textContent = title;
-      root.appendChild(b);
-      const arr = Array.isArray(values) ? values : (values ? [values] : []);
-      if (!arr.length) {
-        const d = document.createElement('div');
-        d.textContent = emptyMsg;
-        root.appendChild(d);
-        return;
-      }
-      arr.forEach((v) => {
-        const d = document.createElement('div');
-        d.textContent = '• ' + safeText(v);
-        root.appendChild(d);
-      });
-    }
-
-    /* ---------- Rendu du résultat ---------- */
-    function renderResult(payload) {
-      const r = payload && payload.result ? payload.result : payload;
-      if (!r || typeof r !== 'object') throw new Error('Réponse serveur invalide : champ result manquant.');
-
-      $('resultEmpty').style.display = 'none';
-      $('resultContent').style.display = 'block';
-
-      const sig = safeText(r.signal, 'WAIT').toUpperCase();
-      setText('signalText', sig);
-      const banner = $('signalBanner');
-      banner.className = 'signal-banner ' + (sig.includes('BUY') ? 'bg-buy' : sig.includes('SELL') ? 'bg-sell' : 'bg-wait');
-
-      const conf = Number(r.confidence);
-      const confEl = $('confidence');
-      if (Number.isFinite(conf)) {
-        confEl.textContent = `${conf}/100`;
-        confEl.style.color = conf >= 70 ? '#6ee7b7' : conf >= 40 ? '#fcd34d' : '#fca5a5';
-      } else {
-        confEl.textContent = '—';
-        confEl.style.color = '';
-      }
-
-      setText('rAsset', r.asset);
-      setText('rTimeframe', r.timeframe);
-      setText('rTrend', r.trend);
-      setText('rEntry', r.entry);
-      setText('rStop', r.stop_loss);
-      setText('rStructure', r.structure);
-
-      renderChips('rZones', r.zones, false);
-      renderChips('rTargets', r.take_profits, true);
-
-      renderLines('rPointsForts', '✅ Points forts', r.points_forts, 'Aucun point fort communiqué.');
-      renderLines('rPointsCritiques', '⚠️ Points critiques', r.points_critiques, 'Aucun point critique communiqué.');
-
-      /* Scénarios (sans innerHTML) */
-      const scenRoot = $('rScenarios');
-      scenRoot.replaceChildren();
-      const scen = r.scenarios || {};
-      [['Plan A', scen.principal, ''], ['Plan B', scen.alternatif, 'alt']].forEach(([label, val, extra]) => {
-        const div = document.createElement('div');
-        div.className = 'scenario-box' + (extra ? ' ' + extra : '');
-        const b = document.createElement('b');
-        b.textContent = label + ' : ';
-        div.appendChild(b);
-        div.appendChild(document.createTextNode(safeText(val)));
-        scenRoot.appendChild(div);
-      });
-
-      /* Conseil (sans innerHTML) */
-      const advice = $('rConseil');
-      advice.replaceChildren();
-      const strong = document.createElement('b');
-      strong.textContent = '💡 Conseil du Mentor : ';
-      advice.appendChild(strong);
-      advice.appendChild(document.createTextNode(safeText(r.conseil)));
-
-      /* Budget risque */
-      const { pct, amount } = computeRisk();
-      $('resultRisk').textContent =
-        `Budget de risque indicatif : ${pct}% du capital = ${amount.toFixed(2)} USD. ` +
-        `Le lot exact dépend du broker.`;
-
-      return r;
-    }
-
-    /* ---------- Analyse ---------- */
     $('analyzeBtn').addEventListener('click', async () => {
-      if (!selectedFile) { showError("Veuillez d'abord importer une capture."); return; }
-      clearError();
+      const file = $('chartFile').files[0];
+      if (!file) return alert("Veuillez d'abord importer une image.");
 
-      const button = $('analyzeBtn');
-      button.disabled = true;
-      button.textContent = 'Analyse en cours…';
       $('scanLine').classList.add('active');
-
+      
       const body = new FormData();
-      body.append('file', selectedFile, selectedFile.name);
+      body.append('file', file);
       body.append('mode', $('modeSelect').value);
-      const risk = computeRisk();
-      body.append('capital', String(risk.capital));
-      body.append('risk_percent', String(risk.pct));
-
-      const csrf = document.querySelector('meta[name="csrf-token"]')?.content?.trim() || '';
-      const headers = {};
-      if (csrf) headers['X-CSRFToken'] = csrf;
 
       try {
-        const res = await fetch('/api/analyze', { method: 'POST', body, headers, credentials: 'same-origin' });
-        const raw = await res.text();
-        let data = {};
-        try { data = raw ? JSON.parse(raw) : {}; }
-        catch (_) { throw new Error('Réponse serveur non JSON. Vérifiez /api/analyze.'); }
-        if (!res.ok) throw new Error(data.error || data.message || `Erreur HTTP ${res.status}`);
-
-        const result = renderResult(data);
-
-        const record = {
-          id: Date.now(),
-          at: new Date().toISOString(),
-          mode: $('modeSelect').value,
-          filename: selectedFile.name,
-          asset: safeText(result.asset),
-          timeframe: safeText(result.timeframe),
-          signal: safeText(result.signal, 'WAIT'),
-          confidence: safeText(result.confidence, '0'),
-          entry: safeText(result.entry),
-          stop_loss: safeText(result.stop_loss),
-          capital: risk.capital,
-          riskPercent: risk.pct,
-          riskAmount: risk.amount,
-          summary: safeText(result.conseil, '')
-        };
-        const history = readStore(HISTORY_KEY);
-        history.unshift(record);
-        writeStore(HISTORY_KEY, history.slice(0, 50));
-        audit('Analyse terminée', `${record.mode} · ${record.asset} · ${record.signal} · ${record.filename}`);
-        renderHistory();
-      } catch (err) {
-        showError(err.message || 'Erreur de connexion au serveur.');
-        audit("Erreur d'analyse", err.message || 'Erreur inconnue');
-      } finally {
+        const res = await fetch('/api/analyze', { method: 'POST', body });
+        const data = await res.json();
         $('scanLine').classList.remove('active');
-        button.disabled = false;
-        button.textContent = "Lancer l'IA";
-      }
-    });
 
-    /* ---------- Historique ---------- */
-    function formatDate(iso) {
-      const d = new Date(iso);
-      return Number.isNaN(d.getTime()) ? 'Date inconnue' : d.toLocaleString('fr-FR');
-    }
-    function renderHistory() {
-      const root = $('historyList'); if (!root) return;
-      root.replaceChildren();
-      const history = readStore(HISTORY_KEY);
-      if (!history.length) {
-        const p = document.createElement('p');
-        p.className = 'empty';
-        p.textContent = 'Aucune analyse enregistrée pour le moment.';
-        root.appendChild(p);
-      }
-      history.forEach((item) => {
-        const card = document.createElement('article');
-        card.className = 'history-item';
+        if (res.ok) {
+          const r = data.result;
+          $('resultCard').style.display = 'block';
+          
+          const sig = (r.signal || 'WAIT').toUpperCase();
+          $('signalText').textContent = sig;
+          $('signalBanner').className = 'signal-banner ' + (sig.includes('BUY') ? 'bg-buy' : sig.includes('SELL') ? 'bg-sell' : 'bg-wait');
+          $('confidence').textContent = `${r.confidence || 0}/100`;
 
-        const head = document.createElement('div');
-        head.className = 'history-head';
-        const title = document.createElement('b');
-        title.textContent = `${item.signal} · ${item.asset} · ${item.timeframe}`;
-        const date = document.createElement('span');
-        date.className = 'micro';
-        date.textContent = formatDate(item.at);
-        head.append(title, date);
-        card.appendChild(head);
+          $('rAsset').textContent = r.asset || '—';
+          $('rTimeframe').textContent = r.timeframe || '—';
+          $('rTrend').textContent = r.trend || '—';
+          $('rEntry').textContent = r.entry || '—';
+          $('rStop').textContent = r.stop_loss || '—';
+          $('rStructure').textContent = r.structure || '—';
 
-        const p = document.createElement('p');
-        p.textContent = `Mode : ${item.mode === 'audit' ? 'Audit' : 'Signal'} | Confiance : ${item.confidence}/100 | Entrée : ${item.entry} | SL : ${item.stop_loss} | Risque indicatif : ${Number(item.riskAmount || 0).toFixed(2)} USD`;
-        card.appendChild(p);
+          $('rZones').innerHTML = (r.zones || []).map(z => `<span style="background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:4px; font-size:0.8rem;">${z}</span>`).join('');
+          $('rTargets').innerHTML = (r.take_profits || []).map(t => `<span style="background:rgba(16,185,129,0.2); padding:4px 8px; border-radius:4px; font-size:0.8rem; color:#10b981;">${t}</span>`).join('');
 
-        if (item.summary) {
-          const s = document.createElement('p');
-          s.textContent = 'Conseil : ' + item.summary;
-          card.appendChild(s);
+          $('rPointsForts').innerHTML = `<b>✅ Points Forts :</b><br>${(r.points_forts || []).join('<br>')}`;
+          $('rPointsCritiques').innerHTML = `<b>⚠️ Points Critiques :</b><br>${(r.points_critiques || []).join('<br>')}`;
+
+          $('rScenarios').innerHTML = `
+            <div class="scenario-box"><b>Plan A :</b> ${r.scenarios?.principal || '—'}</div>
+            <div class="scenario-box" style="border-left-color:#0ea5e9;"><b>Plan B :</b> ${r.scenarios?.alternatif || '—'}</div>
+          `;
+
+          $('rConseil').innerHTML = `<b>💡 Conseil :</b><br>${r.conseil || '—'}`;
+        } else {
+          alert("Erreur IA : " + data.error);
         }
-        root.appendChild(card);
-      });
-      renderAudit();
-    }
-    function renderAudit() {
-      const root = $('auditList'); if (!root) return;
-      root.replaceChildren();
-      const entries = readStore(AUDIT_KEY);
-      if (!entries.length) {
-        const li = document.createElement('li');
-        li.textContent = 'Aucun événement pour le moment.';
-        root.appendChild(li);
-        return;
+      } catch (e) {
+        $('scanLine').classList.remove('active');
+        alert("Erreur de connexion.");
       }
-      entries.slice(0, 30).forEach((item) => {
-        const li = document.createElement('li');
-        li.textContent = `${formatDate(item.at)} — ${item.message}${item.details ? ' : ' + item.details : ''}`;
-        root.appendChild(li);
-      });
-    }
-    $('clearHistoryBtn').addEventListener('click', () => {
-      if (!confirm("Effacer l'historique et le journal d'audit enregistrés sur cet appareil ?")) return;
-      localStorage.removeItem(HISTORY_KEY);
-      localStorage.removeItem(AUDIT_KEY);
-      renderHistory();
-      audit('Historique local effacé');
     });
 
-    /* ---------- Init ---------- */
-    renderAudit();
-    if (document.readyState === 'complete') {
-      initTradingView();
-    } else {
-      window.addEventListener('load', initTradingView, { once: true });
+    // --- LOGIQUE DU CHAT ---
+    function toggleChat() {
+      const win = $('chatWindow');
+      win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    async function sendMessage() {
+      const input = $('chatInput');
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      const messages = $('chatMessages');
+      messages.innerHTML += `<div class="msg user">${msg}</div>`;
+      input.value = '';
+      messages.scrollTop = messages.scrollHeight;
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          messages.innerHTML += `<div class="msg bot">${data.reply}</div>`;
+        } else {
+          messages.innerHTML += `<div class="msg bot" style="color:#ef4444;">Erreur : ${data.error}</div>`;
+        }
+        messages.scrollTop = messages.scrollHeight;
+      } catch (e) {
+        messages.innerHTML += `<div class="msg bot" style="color:#ef4444;">Erreur de connexion.</div>`;
+      }
     }
   </script>
 </body>
