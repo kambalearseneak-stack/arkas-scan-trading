@@ -86,38 +86,34 @@ def csrf_token(): return ""
 def inject_csrf(): return {"csrf_token": csrf_token}
 def verify_csrf(): pass
 
-# --- NOUVEAU PROMPT : MENTOR DE TRADING ---
 def build_prompt(mode):
     common = """
 Tu es ARKAS SCAN AI, un Mentor de Trading expert (SMC, ICT, Price Action).
-Analyse l'image fournie. Tu dois DÉTECTER TOI-MÊME l'actif, le timeframe et les prix. Ne demande rien à l'utilisateur.
+Analyse l'image fournie. Tu dois DÉTECTER TOI-MÊME l'actif, le timeframe et les prix.
 
 Réponds EXCLUSIVEMENT en JSON valide avec ces clés (en français) :
 {
  "signal": "BUY NOW | SELL NOW | BUY LIMIT | SELL LIMIT | WAIT",
- "asset": "Nom de l'actif détecté (ex: XAUUSD)",
- "timeframe": "Timeframe détecté (ex: H1)",
+ "asset": "Nom de l'actif détecté",
+ "timeframe": "Timeframe détecté",
  "trend": "Haussière | Baissière | Range",
- "structure": "Explication de la structure (BOS, CHoCH, tendance)",
+ "structure": "Explication de la structure",
  "zones": ["Zone 1", "Zone 2"],
- "entry": "Prix d'entrée suggéré",
- "stop_loss": "Prix du Stop Loss",
- "take_profits": ["TP1: ...", "TP2: ...", "TP3: ..."],
+ "entry": "Prix d'entrée",
+ "stop_loss": "Stop Loss",
+ "take_profits": ["TP1", "TP2", "TP3"],
  "confidence": 0,
- "points_forts": ["Point fort 1", "Point fort 2"],
- "points_critiques": ["Point critique 1 (ex: liquidité non prise, FVG comblé)"],
- "conseil": "Un conseil de mentor (ex: 'Attendez la clôture de la bougie H1 avant d'entrer')",
- "scenarios": {
-   "principal": "Plan A détaillé",
-   "alternatif": "Plan B détaillé"
- },
- "verdict": "Verdict final (ex: 'Setup validé avec un bon RR, mais risqué à cause des news')",
+ "points_forts": ["Point fort 1"],
+ "points_critiques": ["Point critique 1"],
+ "conseil": "Conseil de mentor",
+ "scenarios": {"principal": "Plan A", "alternatif": "Plan B"},
+ "verdict": "Verdict final",
  "invalidation": "Condition d'invalidation"
 }
 """
     if mode == "audit":
-        return common + "\nMODE AUDIT : Évalue l'analyse de l'utilisateur (si visible). Sois critique. Donne les points forts, les points critiques, et un conseil. Utilise WAIT si le plan est mauvais."
-    return common + "\nMODE SCANNER : Cherche une configuration exploitable. Donne les points forts et critiques de ta propre analyse."
+        return common + "\nMODE AUDIT : Évalue l'analyse de l'utilisateur. Sois critique."
+    return common + "\nMODE SCANNER : Cherche une configuration exploitable."
 
 def extract_json(text):
     text = (text or "").strip()
@@ -126,12 +122,7 @@ def extract_json(text):
     try:
         return json.loads(text)
     except:
-        return {
-            "signal": "WAIT", "asset": "Erreur", "timeframe": "Erreur", "trend": "Erreur", 
-            "structure": "Erreur", "zones": [], "entry": "-", "stop_loss": "-", "take_profits": [], 
-            "confidence": 0, "points_forts": [], "points_critiques": [], "conseil": "-",
-            "scenarios": {"principal": "-", "alternatif": "-"}, "verdict": "-", "invalidation": "-"
-        }
+        return {"signal": "WAIT", "asset": "Erreur", "timeframe": "Erreur", "trend": "Erreur", "structure": "Erreur", "zones": [], "entry": "-", "stop_loss": "-", "take_profits": [], "confidence": 0, "points_forts": [], "points_critiques": [], "conseil": "-", "scenarios": {"principal": "-", "alternatif": "-"}, "verdict": "-", "invalidation": "-"}
 
 @app.route("/")
 def home():
@@ -199,6 +190,22 @@ def analyze():
                 time.sleep(3)
                 continue
             return jsonify({"error": str(e)}), 500
+
+# --- NOUVELLE ROUTE POUR LE CHAT FLOATANT (ARKAS) ---
+@app.route("/api/chat", methods=["POST"])
+@admin_required
+def chat():
+    if not gemini_client: return jsonify({"error": "GOOGLE_API_KEY manquante."}), 503
+    data = request.get_json()
+    user_message = data.get("message", "")
+    if not user_message: return jsonify({"error": "Message vide."}), 400
+    
+    try:
+        prompt = f"Tu es ARKAS, un assistant expert en trading (SMC, ICT). Réponds de manière concise et professionnelle : {user_message}"
+        response = gemini_client.models.generate_content(model=GEMINI_MODEL, contents=[prompt])
+        return jsonify({"reply": response.text})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/history")
 @admin_required
