@@ -71,6 +71,17 @@ def init_db():
 
 init_db()
 
+# --- OUTILS POUR L'AGENT ARKAS ---
+def lire_dernieres_analyses(limite=3):
+    """Permet à l'IA de lire les dernières analyses du site."""
+    try:
+        with db_connect() as conn:
+            rows = conn.execute("SELECT asset, signal, entry, created_at FROM analyses ORDER BY id DESC LIMIT ?", (limite,)).fetchall()
+        if not rows: return "Aucune analyse enregistrée."
+        return json.dumps([dict(row) for row in rows], ensure_ascii=False)
+    except Exception as e:
+        return f"Erreur : {str(e)}"
+
 def admin_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
@@ -94,8 +105,8 @@ Analyse l'image fournie. Tu dois DÉTECTER TOI-MÊME l'actif, le timeframe et le
 Réponds EXCLUSIVEMENT en JSON valide avec ces clés (en français) :
 {
  "signal": "BUY NOW | SELL NOW | BUY LIMIT | SELL LIMIT | WAIT",
- "asset": "Nom de l'actif détecté",
- "timeframe": "Timeframe détecté",
+ "asset": "Nom de l'actif",
+ "timeframe": "Timeframe",
  "trend": "Haussière | Baissière | Range",
  "structure": "Explication de la structure",
  "zones": ["Zone 1", "Zone 2"],
@@ -107,7 +118,6 @@ Réponds EXCLUSIVEMENT en JSON valide avec ces clés (en français) :
  "points_critiques": ["Point critique 1"],
  "conseil": "Conseil de mentor",
  "scenarios": {"principal": "Plan A", "alternatif": "Plan B"},
- "verdict": "Verdict final",
  "invalidation": "Condition d'invalidation"
 }
 """
@@ -122,7 +132,7 @@ def extract_json(text):
     try:
         return json.loads(text)
     except:
-        return {"signal": "WAIT", "asset": "Erreur", "timeframe": "Erreur", "trend": "Erreur", "structure": "Erreur", "zones": [], "entry": "-", "stop_loss": "-", "take_profits": [], "confidence": 0, "points_forts": [], "points_critiques": [], "conseil": "-", "scenarios": {"principal": "-", "alternatif": "-"}, "verdict": "-", "invalidation": "-"}
+        return {"signal": "WAIT", "asset": "Erreur", "timeframe": "Erreur", "trend": "Erreur", "structure": "Erreur", "zones": [], "entry": "-", "stop_loss": "-", "take_profits": [], "confidence": 0, "points_forts": [], "points_critiques": [], "conseil": "-", "scenarios": {"principal": "-", "alternatif": "-"}, "invalidation": "-"}
 
 @app.route("/")
 def home():
@@ -191,19 +201,62 @@ def analyze():
                 continue
             return jsonify({"error": str(e)}), 500
 
-# --- NOUVELLE ROUTE POUR LE CHAT FLOATANT (ARKAS) ---
+# --- ROUTE CHAT AVEC NEWS ET ACCÈS AUX DONNÉES ---
 @app.route("/api/chat", methods=["POST"])
 @admin_required
 def chat():
     if not gemini_client: return jsonify({"error": "GOOGLE_API_KEY manquante."}), 503
+    
     data = request.get_json()
     user_message = data.get("message", "")
     if not user_message: return jsonify({"error": "Message vide."}), 400
     
     try:
-        prompt = f"Tu es ARKAS, un assistant expert en trading (SMC, ICT). Réponds de manière concise et professionnelle : {user_message}"
-        response = gemini_client.models.generate_content(model=GEMINI_MODEL, contents=[prompt])
+        # On donne à l'IA accès à Google Search ET à la fonction de lecture des analyses
+        config = types.GenerateContentConfig(
+            tools=[
+                {"google_search": {}}, # Accès aux news
+                lire_dernieres_analyses # Accès à la base de données
+            ],
+            temperature=0.3
+        )
+        
+        prompt = (
+            "Tu es ARKAS, un assistant expert en trading. "
+            "Tu as accès aux dernières analyses du site via tes outils. "
+            "Si on te demande des news ou le calendrier économique, utilise la recherche Google "
+            "pour vérifier les impacts (NFP, CPI, FED, etc.). "
+            "Sois direct et donne des avertissements clairs si une news majeure approche. "
+            "Question : " + user_message
+        )
+        
+        response = gemini_client.models.generate_content(
+            model=GEMINI_MODEL, 
+            contents=[prompt],
+            config=config
+        )
         return jsonify({"reply": response.text})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# --- ROUTE JOURNAL MANUEL ---
+@app.route("/api/journal", methods=["POST"])
+@admin_required
+def journal():
+    data = request.get_json()
+    try:
+        with db_connect() as conn:
+            conn.execute("""
+                INSERT INTO analyses (created_at, mode, original_filename, mime_type, result_text, signal, asset, timeframe) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                datetime.now(timezone.utc).isoformat(), 
+                "manuel", "journal", "text/plain", 
+                json.dumps({"commentaire": data.get('commentaire')}), 
+                data.get('signal'), data.get('asset'), "Manuel"
+            ))
+            conn.commit()
+        return jsonify({"status": "ok"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
