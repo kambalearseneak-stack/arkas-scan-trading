@@ -277,4 +277,37 @@
     // --- CHAT ---
     function toggleChat() {
       const win = $('chatWindow');
-      win.style.display = win.style.display === 'flex' ?
+      win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    async function sendMessage() {
+      const input = $('chatInput');
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      const messages = $('chatMessages');
+      messages.innerHTML += `<div class="msg user">${msg}</div>`;
+      input.value = '';
+      messages.scrollTop = messages.scrollHeight;
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          messages.innerHTML += `<div class="msg bot">${data.reply}</div>`;
+        } else {
+          messages.innerHTML += `<div class="msg bot" style="color:#ef4444;">Erreur : ${data.error}</div>`;
+        }
+        messages.scrollTop = messages.scrollHeight;
+      } catch (e) {
+        messages.innerHTML += `<div class="msg bot" style="color:#ef4444;">Erreur de connexion.</div>`;
+      }
+    }
+  </script>
+</body>
+</html>
