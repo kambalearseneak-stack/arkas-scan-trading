@@ -5,98 +5,55 @@
   <meta name="csrf-token" content="{{ csrf_token }}">
   <title>Terminal Pro · ARKAS SCAN AI</title>
   <style>
-    /* --- ARRIÈRE-PLAN --- */
-    body {
-      font-family: 'Inter', sans-serif; margin: 0; padding: 0; height: 100vh;
-      background: url('/akas.jpg') no-repeat center center fixed; background-size: cover;
-      display: flex; flex-direction: column; color: white; overflow: hidden;
-    }
+    body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; height: 100vh; background: url('/akas.jpg') no-repeat center center fixed; background-size: cover; display: flex; flex-direction: column; color: white; overflow: hidden; }
     body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(7, 17, 31, 0.7); backdrop-filter: blur(8px); z-index: -1; }
 
-    /* --- HEADER --- */
-    .topbar {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 10px 20px; background: rgba(16, 29, 45, 0.85); backdrop-filter: blur(15px);
-      border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 100;
-    }
+    /* HEADER */
+    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: rgba(16, 29, 45, 0.85); backdrop-filter: blur(15px); border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 100; }
     .brand-logo { font-size: 1.2rem; font-weight: bold; color: #facc15; }
     .brand-logo span { color: #0ea5e9; }
-    
     .tabs-nav { display: flex; gap: 10px; }
-    .nav-tab {
-      background: transparent; border: none; color: #94a3b8; padding: 10px 20px;
-      border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s;
-    }
+    .nav-tab { background: transparent; border: none; color: #94a3b8; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
     .nav-tab:hover { background: rgba(255,255,255,0.05); color: white; }
     .nav-tab.active { background: #0ea5e9; color: white; }
-    
     .logout-btn { background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
 
-    /* --- CONTENU --- */
+    /* CONTENU */
     .main-area { flex: 1; position: relative; display: flex; flex-direction: column; }
     .tab-content { display: none; width: 100%; height: 100%; }
     .tab-content.active { display: flex; flex-direction: column; }
-
-    /* Onglet 1 : TradingView (Plein écran) */
     #tradingview_chart { width: 100%; height: 100%; border: none; }
 
-    /* Onglet 2 : Scanner */
+    /* SCANNER */
     #tab-scanner { padding: 20px; overflow-y: auto; }
     .scanner-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1400px; margin: 0 auto; width: 100%; }
-    
-    .glass-panel {
-      background: rgba(16, 29, 45, 0.85); backdrop-filter: blur(15px);
-      border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
-
-    /* Zone d'upload */
-    .upload-zone {
-      height: 350px; border: 2px dashed rgba(14, 165, 233, 0.5);
-      background: rgba(14, 165, 233, 0.05); border-radius: 12px;
-      display: flex; flex-direction: column; justify-content: center; align-items: center;
-      cursor: pointer; position: relative; overflow: hidden; transition: 0.3s;
-    }
+    .glass-panel { background: rgba(16, 29, 45, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .upload-zone { height: 250px; border: 2px dashed rgba(14, 165, 233, 0.5); background: rgba(14, 165, 233, 0.05); border-radius: 12px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; position: relative; overflow: hidden; transition: 0.3s; }
     .upload-zone:hover { background: rgba(14, 165, 233, 0.1); border-color: #0ea5e9; }
     .upload-zone img { max-width: 100%; max-height: 100%; object-fit: contain; display: none; }
     .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #38bdf8; box-shadow: 0 0 15px 4px rgba(56, 189, 248, 0.8); display: none; z-index: 10; }
     .scan-line.active { display: block; animation: scanning 2s linear infinite; }
     @keyframes scanning { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
 
-    /* Résultats */
+    /* RESULTATS */
     .result-card { display: none; }
     .signal-banner { display: flex; justify-content: space-between; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1.2rem; margin-bottom: 15px; }
     .bg-buy { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
     .bg-sell { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
     .bg-wait { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b; }
-    
     .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
     .data-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; border-left: 3px solid #0ea5e9; }
     .data-item small { display: block; color: #94a3b8; font-size: 0.7rem; }
     .data-item b { font-size: 0.95rem; }
-
     .scenario-box { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; margin-top: 5px; font-size: 0.85rem; border-left: 3px solid #facc15; }
     .box-pro { background: rgba(16, 185, 129, 0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #10b981; margin-top: 5px; font-size: 0.85rem; }
     .box-con { background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #ef4444; margin-top: 5px; font-size: 0.85rem; }
     .box-advice { background: rgba(14, 165, 233, 0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #0ea5e9; margin-top: 10px; font-size: 0.85rem; font-style: italic; }
 
-    /* --- AGENT AI FLOTTANT --- */
-    .chat-bubble {
-      position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px;
-      background: linear-gradient(135deg, #0ea5e9, #0284c7); border-radius: 50%;
-      display: flex; justify-content: center; align-items: center; cursor: pointer;
-      box-shadow: 0 5px 20px rgba(14, 165, 233, 0.5); z-index: 1000;
-      font-size: 1.5rem; transition: 0.3s;
-    }
+    /* AGENT AI FLOTTANT */
+    .chat-bubble { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: linear-gradient(135deg, #0ea5e9, #0284c7); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 5px 20px rgba(14, 165, 233, 0.5); z-index: 1000; font-size: 1.5rem; transition: 0.3s; }
     .chat-bubble:hover { transform: scale(1.1); }
-    
-    .chat-window {
-      position: fixed; bottom: 90px; right: 20px; width: 350px; height: 450px;
-      background: rgba(16, 29, 45, 0.95); backdrop-filter: blur(15px);
-      border: 1px solid rgba(255,255,255,0.1); border-radius: 15px;
-      display: none; flex-direction: column; z-index: 1000;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden;
-    }
+    .chat-window { position: fixed; bottom: 90px; right: 20px; width: 350px; height: 450px; background: rgba(16, 29, 45, 0.95); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; display: none; flex-direction: column; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; }
     .chat-header { background: rgba(14, 165, 233, 0.2); padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
     .chat-header button { background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem; }
     .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 0.9rem; }
@@ -107,39 +64,31 @@
     .chat-input-area input { flex: 1; padding: 10px; border-radius: 6px; border: none; background: rgba(0,0,0,0.3); color: white; }
     .chat-input-area button { padding: 10px 15px; background: #0ea5e9; border: none; border-radius: 6px; color: white; cursor: pointer; }
 
-    @media (max-width: 900px) {
-      .scanner-layout { grid-template-columns: 1fr; }
-      .tabs-nav { gap: 5px; }
-      .nav-tab { padding: 8px 12px; font-size: 0.8rem; }
-    }
+    @media (max-width: 900px) { .scanner-layout { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
 
-  <!-- HEADER -->
   <header class="topbar">
     <div class="brand-logo">ARKAS <span>SCAN AI</span></div>
     <nav class="tabs-nav">
       <button class="nav-tab active" onclick="switchTab('tradingview', this)">📈 Marché</button>
-      <button class="nav-tab" onclick="switchTab('scanner', this)">🔍 Scanner / Audit</button>
+      <button class="nav-tab" onclick="switchTab('scanner', this)">🔍 Scanner / Journal</button>
     </nav>
     <form method="post" action="/logout"><button class="logout-btn">Déconnexion</button></form>
   </header>
 
-  <!-- CONTENU -->
   <main class="main-area">
-    
-    <!-- ONGLET 1 : TRADINGVIEW -->
     <div id="tab-tradingview" class="tab-content active">
       <div id="tradingview_chart"></div>
     </div>
 
-    <!-- ONGLET 2 : SCANNER -->
     <div id="tab-scanner" class="tab-content">
       <div class="scanner-layout">
         
+        <!-- Colonne Gauche : Scanner + Journal -->
         <div class="glass-panel">
-          <h3 style="margin-top:0; color:#facc15;">Importer l'image</h3>
+          <h3 style="margin-top:0; color:#facc15;">1. Scanner une image</h3>
           <div class="upload-zone" id="uploadZone">
             <div class="scan-line" id="scanLine"></div>
             <div id="uploadText" style="text-align:center;">
@@ -157,8 +106,19 @@
             </select>
             <button id="analyzeBtn" style="flex:1; padding:10px; border:none; border-radius:6px; background:#0ea5e9; color:white; font-weight:bold; cursor:pointer;">Lancer l'IA</button>
           </div>
+
+          <!-- Formulaire Journal -->
+          <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+              <h4 style="color:#facc15; margin-top:0;">📝 Ajouter au Journal</h4>
+              <input type="text" id="journalAsset" placeholder="Actif (ex: XAUUSD)" style="width:100%; padding:8px; margin-bottom:5px; border-radius:5px; border:none; background:rgba(0,0,0,0.3); color:white;">
+              <input type="text" id="journalSignal" placeholder="Signal (ex: BUY)" style="width:100%; padding:8px; margin-bottom:5px; border-radius:5px; border:none; background:rgba(0,0,0,0.3); color:white;">
+              <input type="number" id="journalEntry" placeholder="Prix d'entrée" style="width:100%; padding:8px; margin-bottom:5px; border-radius:5px; border:none; background:rgba(0,0,0,0.3); color:white;">
+              <textarea id="journalNote" placeholder="Votre note..." style="width:100%; padding:8px; margin-bottom:5px; border-radius:5px; border:none; background:rgba(0,0,0,0.3); color:white; height:60px;"></textarea>
+              <button id="saveJournalBtn" style="width:100%; padding:10px; background:#facc15; color:#000; border:none; border-radius:5px; font-weight:bold; cursor:pointer;">Enregistrer dans le journal</button>
+          </div>
         </div>
 
+        <!-- Colonne Droite : Résultats -->
         <div class="glass-panel result-card" id="resultCard">
           <div id="signalBanner" class="signal-banner bg-wait">
             <span id="signalText">WAIT</span>
@@ -198,34 +158,22 @@
       <button onclick="toggleChat()">×</button>
     </div>
     <div class="chat-messages" id="chatMessages">
-      <div class="msg bot">Bonjour ! Je suis ARKAS. Posez-moi une question sur le trading, une stratégie, ou demandez-moi de l'aide.</div>
+      <div class="msg bot">Bonjour ! Je suis ARKAS. Demandez-moi les news économiques ou des conseils sur vos analyses.</div>
     </div>
     <div class="chat-input-area">
-      <input type="text" id="chatInput" placeholder="Votre question..." onkeypress="if(event.key==='Enter') sendMessage()">
+      <input type="text" id="chatInput" placeholder="Ex: Quelles sont les news aujourd'hui ?" onkeypress="if(event.key==='Enter') sendMessage()">
       <button onclick="sendMessage()">Envoyer</button>
     </div>
   </div>
 
-  <!-- SCRIPT TRADINGVIEW -->
   <script src="https://s3.tradingview.com/tv.js"></script>
   <script>
-    // --- INITIALISATION TRADINGVIEW PLEIN ÉCRAN ---
+    // --- INITIALISATION TRADINGVIEW ---
     new TradingView.widget({
-      "container_id": "tradingview_chart",
-      "autosize": true,
-      "symbol": "FX:XAUUSD",
-      "interval": "60",
-      "timezone": "Etc/UTC",
-      "theme": "dark",
-      "style": "1",
-      "locale": "fr",
-      "toolbar_bg": "rgba(16, 29, 45, 0.9)",
-      "enable_publishing": false,
-      "withdateranges": true,
-      "hide_side_toolbar": false,
-      "allow_symbol_change": true,
-      "save_image": true,
-      "studies": ["Volume@tv-basicstudies"]
+      "container_id": "tradingview_chart", "autosize": true, "symbol": "FX:XAUUSD", "interval": "60",
+      "timezone": "Etc/UTC", "theme": "dark", "style": "1", "locale": "fr",
+      "enable_publishing": false, "withdateranges": true, "hide_side_toolbar": false, 
+      "allow_symbol_change": true, "save_image": true, "studies": ["Volume@tv-basicstudies"]
     });
 
     // --- NAVIGATION ---
@@ -236,9 +184,8 @@
       btnElement.classList.add('active');
     }
 
-    // --- LOGIQUE SCANNER ---
+    // --- SCANNER ---
     const $ = (id) => document.getElementById(id);
-    
     $('uploadZone').addEventListener('click', () => $('chartFile').click());
     $('chartFile').addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -301,40 +248,33 @@
       }
     });
 
-    // --- LOGIQUE DU CHAT ---
-    function toggleChat() {
-      const win = $('chatWindow');
-      win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
-    }
-
-    async function sendMessage() {
-      const input = $('chatInput');
-      const msg = input.value.trim();
-      if (!msg) return;
-
-      const messages = $('chatMessages');
-      messages.innerHTML += `<div class="msg user">${msg}</div>`;
-      input.value = '';
-      messages.scrollTop = messages.scrollHeight;
-
-      try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: msg })
+    // --- JOURNAL MANUEL ---
+    $('saveJournalBtn').addEventListener('click', async () => {
+        const body = {
+            asset: $('journalAsset').value,
+            signal: $('journalSignal').value,
+            entry: $('journalEntry').value,
+            commentaire: $('journalNote').value
+        };
+        
+        if (!body.asset || !body.signal) return alert("Remplissez l'actif et le signal.");
+        
+        const res = await fetch('/api/journal', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body)
         });
-        const data = await res.json();
         
         if (res.ok) {
-          messages.innerHTML += `<div class="msg bot">${data.reply}</div>`;
+            alert("✅ Trade ajouté au journal !");
+            $('journalAsset').value = ''; $('journalSignal').value = '';
+            $('journalEntry').value = ''; $('journalNote').value = '';
         } else {
-          messages.innerHTML += `<div class="msg bot" style="color:#ef4444;">Erreur : ${data.error}</div>`;
+            alert("Erreur lors de l'ajout.");
         }
-        messages.scrollTop = messages.scrollHeight;
-      } catch (e) {
-        messages.innerHTML += `<div class="msg bot" style="color:#ef4444;">Erreur de connexion.</div>`;
-      }
-    }
-  </script>
-</body>
-</html>
+    });
+
+    // --- CHAT ---
+    function toggleChat() {
+      const win = $('chatWindow');
+      win.style.display = win.style.display === 'flex' ?
