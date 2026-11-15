@@ -4,140 +4,233 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token }}">
   <title>Terminal Pro · ARKAS SCAN AI</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <style>
-    body { background: url('/akas.jpg') no-repeat center center fixed !important; background-size: cover !important; }
-    body::before { background: rgba(7, 17, 31, 0.75) !important; }
-    .panel, .topbar { background: rgba(16, 29, 45, 0.85) !important; backdrop-filter: blur(15px) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; }
-    
-    .tabs { display: flex !important; gap: 10px !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; padding-bottom: 10px !important; margin-bottom: 20px !important; overflow-x: auto !important; }
-    .tab { background: rgba(255,255,255,0.05) !important; border: 1px solid rgba(255,255,255,0.1) !important; border-radius: 8px !important; padding: 10px 20px !important; color: #94a3b8 !important; font-weight: 600 !important; white-space: nowrap !important; transition: 0.3s !important; }
-    .tab.active { background: #0ea5e9 !important; color: white !important; border-color: #0ea5e9 !important; }
+    /* ARRIÈRE PLAN GLOBAL FLOU */
+    body {
+      font-family: 'Inter', sans-serif; margin: 0; padding: 0;
+      background: url('/akas.jpg') no-repeat center center fixed; background-size: cover;
+      color: white; min-height: 100vh;
+    }
+    body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(7, 17, 31, 0.65); backdrop-filter: blur(8px); z-index: -1; }
 
-    .preview-wrap { position: relative; overflow: hidden; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
-    .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #38bdf8; box-shadow: 0 0 15px 4px rgba(56, 189, 248, 0.8); display: none; z-index: 10; }
+    /* HEADER */
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center; padding: 15px 30px;
+      background: rgba(16, 29, 45, 0.7); backdrop-filter: blur(15px); border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .brand { color: #facc15; font-size: 1.2rem; font-weight: bold; text-decoration: none; letter-spacing: 1px;}
+    .logout-btn { background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
+
+    /* LAYOUT PRINCIPAL */
+    .app-container { display: flex; padding: 20px; gap: 20px; max-width: 1400px; margin: 0 auto; }
+    
+    /* BARRE LATÉRALE (Options) */
+    .sidebar { width: 300px; display: flex; flex-direction: column; gap: 15px; }
+    .glass-panel {
+      background: rgba(16, 29, 45, 0.7); backdrop-filter: blur(15px);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    
+    /* ZONE PRINCIPALE (Image + Résultats) */
+    .main-content { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+    
+    /* ZONE D'IMAGE FIXE */
+    .image-zone {
+      height: 400px; display: flex; justify-content: center; align-items: center;
+      background: rgba(0,0,0,0.4); border: 2px dashed rgba(255,255,255,0.2); border-radius: 15px;
+      position: relative; overflow: hidden; transition: 0.3s;
+    }
+    .image-zone:hover { border-color: #0ea5e9; background: rgba(14, 165, 233, 0.1); }
+    .image-zone img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    
+    /* Effet de scan */
+    .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #38bdf8; box-shadow: 0 0 20px 5px rgba(56, 189, 248, 0.8); display: none; }
     .scan-line.active { display: block; animation: scanning 2s linear infinite; }
     @keyframes scanning { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+
+    /* BOUTONS ET SELECTS */
+    .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; color: white; }
+    .btn-primary { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+    .btn-primary:hover { transform: translateY(-2px); }
+    select { width: 100%; padding: 10px; margin-bottom: 10px; background: rgba(0,0,0,0.3); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; }
     
-    .scenario-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 3px solid var(--gold); font-size: 0.9rem; line-height: 1.6; }
-    .scenario-box strong { color: var(--gold); display: block; margin-bottom: 5px; font-size: 1rem; }
+    /* RÉSULTATS (Belles Cartes) */
+    .result-card { display: none; }
+    .signal-banner { display: flex; justify-content: space-between; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1.2rem; margin-bottom: 15px; }
+    .bg-buy { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
+    .bg-sell { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+    .bg-wait { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b; }
     
-    /* Nouveaux styles pour les conseils */
-    .pro-box { background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981; padding: 12px; border-radius: 6px; margin-top: 10px; font-size: 0.9rem; }
-    .con-box { background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 12px; border-radius: 6px; margin-top: 10px; font-size: 0.9rem; }
-    .advice-box { background: rgba(14, 165, 233, 0.15); border-left: 3px solid #0ea5e9; padding: 15px; border-radius: 6px; margin-top: 15px; font-style: italic; }
-    .verdict-box { background: rgba(250, 204, 21, 0.1); border: 1px solid rgba(250, 204, 21, 0.3); padding: 15px; border-radius: 8px; margin-top: 15px; font-weight: bold; }
+    .grid-data { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+    .data-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border-left: 3px solid #0ea5e9; }
+    .data-item small { display: block; color: #94a3b8; font-size: 0.7rem; }
+    .data-item b { font-size: 1rem; }
     
-    #tradingview_chart { height: 500px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+    .scenario-box { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; margin-top: 5px; font-size: 0.85rem; border-left: 3px solid #facc15; }
+    .pro-box { background: rgba(16, 185, 129, 0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #10b981; margin-top: 5px; }
+    .con-box { background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #ef4444; margin-top: 5px; }
+    
+    @media (max-width: 900px) { .app-container { flex-direction: column; } .sidebar { width: 100%; } }
   </style>
 </head>
-<body class="app-body">
+<body>
+
   <header class="topbar">
-    <a class="brand" href="/dashboard"><span class="brand-icon">A</span><span>ARKAS <b>SCAN AI</b><small>V2 PRO</small></span></a>
-    <div class="top-actions"><span class="admin-label">{{ admin_email }}</span>
-      <form method="post" action="/logout"><button class="logout-btn" type="submit">Déconnexion</button></form>
-    </div>
+    <a href="/dashboard" class="brand">A ARKAS SCAN AI</a>
+    <form method="post" action="/logout"><button class="logout-btn">Déconnexion</button></form>
   </header>
 
-  <main class="shell">
-    <nav class="tabs">
-      <button class="tab active" data-tab="market">📈 Marché Direct</button>
-      <button class="tab" data-tab="scanner">🔍 Scanner & Audit</button>
-      <button class="tab" data-tab="history">🗂 Historique</button>
-    </nav>
-
-    <section class="tab-panel active" id="panel-market">
-      <div class="panel">
-        <div class="panel-heading"><div><div class="eyebrow">LIVE MARKET</div><h2>Graphique interactif</h2></div></div>
-        <div id="tradingview_chart"></div>
-        <div class="notice" style="background: rgba(14, 165, 233, 0.1); border-left: 4px solid #0ea5e9; padding: 15px; border-radius: 5px; margin-top: 15px; font-size: 0.85rem;">
-          <strong>💡 Comment scanner :</strong> Cliquez sur l'icône <b>Appareil photo</b> (en haut à droite), téléchargez l'image, puis allez dans l'onglet <b>"Scanner & Audit"</b> pour l'importer.
-        </div>
-      </div>
-    </section>
-
-    <section class="tab-panel" id="panel-scanner">
-      <div class="two-col">
-        <div class="panel">
-          <div class="panel-heading"><div><div class="eyebrow">CONFIGURATION</div><h2>Analyse IA</h2></div></div>
-          
-          <div class="mode-switch" style="margin-top:10px;">
-            <label><input type="radio" name="mode" value="scan" checked><span>🚀 Nouveau Scan</span></label>
-            <label><input type="radio" name="mode" value="audit"><span>🔎 Auditer une Analyse</span></label>
-          </div>
-          
-          <label class="upload-zone" for="chartFile" style="margin-top:15px;">
-            <input id="chartFile" type="file" accept="image/*">
-            <strong>📁 Importer une capture</strong>
-            <span class="tiny muted">L'IA détectera l'actif et le timeframe.</span>
-          </label>
-          
-          <div class="preview-wrap hidden" id="previewWrap" style="margin-top: 15px;">
-            <div class="scan-line" id="scanLine"></div>
-            <img id="preview" alt="Aperçu" style="width:100%;">
-          </div>
-          
-          <button class="button primary full" id="analyzeBtn" type="button" style="margin-top: 15px;">Lancer l'analyse →</button>
-        </div>
+  <div class="app-container">
+    
+    <!-- BARRE LATÉRALE : Options d'analyse -->
+    <div class="sidebar">
+      <div class="glass-panel">
+        <h3 style="margin-top:0; color:#0ea5e9;">⚙️ Configuration</h3>
         
-        <div class="panel result-panel">
-          <div class="panel-heading"><div><div class="eyebrow">AI OUTPUT</div><h2>Rapport ARKAS</h2></div><span class="mini-tag" id="resultMode">EN ATTENTE</span></div>
-          
-          <div id="emptyResult" class="empty-state"><div class="empty-symbol">⌁</div><strong>En attente d'une image</strong></div>
-          <div id="loadingState" class="empty-state hidden"><div class="loader"></div><strong>Analyse IA en cours…</strong></div>
-          <div id="errorState" class="notice error hidden"></div>
-          
-          <div id="analysisResult" class="hidden">
-            <div class="signal-banner" id="signalBanner">
-              <span id="signalText">WAIT</span>
-              <span class="confidence" id="confidence">0/100</span>
-            </div>
-            
-            <div class="metrics-grid">
-              <div><small>ACTIF</small><b id="asset">—</b></div>
-              <div><small>TIMEFRAME</small><b id="timeframe">—</b></div>
-              <div><small>TENDANCE</small><b id="trend">—</b></div>
-              <div><small>ENTRÉE</small><b id="entry">—</b></div>
-              <div><small>STOP LOSS</small><b id="stopLoss">—</b></div>
-              <div><small>STRUCTURE</small><b id="structure" style="font-size:0.8rem;">—</b></div>
-            </div>
-            
-            <div class="result-section"><h3>🎯 Take Profits</h3><div id="targets" class="target-row"></div></div>
-            <div class="result-section"><h3>📌 Zones Clés</h3><div id="zones" class="chips"></div></div>
-            
-            <!-- NOUVEAUX BLOCS -->
-            <div class="result-section">
-              <h3>⚖️ Bilan de l'analyse</h3>
-              <div id="pointsForts" class="pro-box"></div>
-              <div id="pointsCritiques" class="con-box"></div>
-            </div>
-            
-            <div class="result-section">
-              <h3>📋 Plan d'action</h3>
-              <div id="scenarios"></div>
-            </div>
-            
-            <div class="advice-box" id="conseil"></div>
-            <div class="verdict-box" id="verdict"></div>
-            
-            <div class="result-section" style="margin-top: 15px;"><h3>🚫 Invalidation</h3><p id="invalidation"></p></div>
-          </div>
-        </div>
+        <label style="font-size:0.8rem; color:#94a3b8;">Mode d'analyse</label>
+        <select id="modeSelect">
+          <option value="scan">🚀 Générer un signal</option>
+          <option value="audit">🔎 Auditer une analyse</option>
+        </select>
+        
+        <label style="font-size:0.8rem; color:#94a3b8;">Importer l'image</label>
+        <input type="file" id="chartFile" accept="image/*" style="margin-bottom:15px; width:100%; font-size:0.8rem;">
+        
+        <button class="btn btn-primary" id="analyzeBtn">Lancer l'analyse IA</button>
       </div>
-    </section>
 
-    <section class="tab-panel" id="panel-history">
-      <div class="panel"><h2>🗂 Historique</h2><div id="historyList" class="history-list"></div></div>
-    </section>
-  </main>
+      <div class="glass-panel" style="font-size:0.8rem; line-height:1.5;">
+        <h3 style="margin-top:0; color:#facc15;">💡 Rappel</h3>
+        <p>Pour TradingView : Cliquez sur l'appareil photo en haut à droite du graphique, téléchargez l'image, puis importez-la ici.</p>
+        <p>Support : <a href="https://wa.me/243838424263" style="color:#25D366;">0838424263</a></p>
+      </div>
+    </div>
 
-  <script src="https://s3.tradingview.com/tv.js"></script>
+    <!-- ZONE PRINCIPALE : Image et Résultats -->
+    <div class="main-content">
+      
+      <!-- Zone d'image (Fixe) -->
+      <div class="image-zone" id="imageZone">
+        <div class="scan-line" id="scanLine"></div>
+        <div id="placeholderText" style="text-align:center;">
+          <p style="font-size:2rem; margin:0;">📸</p>
+          <p>Glissez-déposez ou sélectionnez une capture d'écran</p>
+        </div>
+        <img id="preview" style="display:none;">
+      </div>
+
+      <!-- Zone de résultats (Cartes) -->
+      <div class="glass-panel result-card" id="resultCard">
+        
+        <div id="signalBanner" class="signal-banner bg-wait">
+          <span id="signalText">WAIT</span>
+          <span id="confidence">0/100</span>
+        </div>
+
+        <div class="grid-data">
+          <div class="data-item"><small>ACTIF</small><b id="rAsset">—</b></div>
+          <div class="data-item"><small>TIMEFRAME</small><b id="rTimeframe">—</b></div>
+          <div class="data-item"><small>TENDANCE</small><b id="rTrend">—</b></div>
+          <div class="data-item"><small>ENTRÉE</small><b id="rEntry">—</b></div>
+          <div class="data-item"><small>STOP LOSS</small><b id="rStop">—</b></div>
+          <div class="data-item"><small>STRUCTURE</small><b id="rStructure" style="font-size:0.8rem;">—</b></div>
+        </div>
+
+        <div style="margin-bottom:15px;">
+          <h4 style="color:#facc15; margin:0 0 5px;">📌 Zones & TPs</h4>
+          <div id="rZones" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
+          <div id="rTargets" style="display:flex; gap:5px; flex-wrap:wrap; margin-top:5px;"></div>
+        </div>
+
+        <div style="margin-bottom:15px;">
+          <h4 style="color:#facc15; margin:0 0 5px;">⚖️ Bilan</h4>
+          <div id="rPointsForts" class="pro-box"></div>
+          <div id="rPointsCritiques" class="con-box"></div>
+        </div>
+
+        <div style="margin-bottom:15px;">
+          <h4 style="color:#facc15; margin:0 0 5px;">📋 Plan d'action</h4>
+          <div id="rScenarios"></div>
+        </div>
+
+        <div class="con-box" style="border-left-color:#0ea5e9; background:rgba(14,165,233,0.1);" id="rConseil"></div>
+
+      </div>
+    </div>
+  </div>
+
   <script>
-    new TradingView.widget({
-      "container_id": "tradingview_chart", "autosize": true, "symbol": "FX:XAUUSD", "interval": "60",
-      "theme": "dark", "style": "1", "locale": "fr", "enable_publishing": false, "save_image": true
+    const $ = (id) => document.getElementById(id);
+    
+    // Aperçu de l'image
+    $('chartFile').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        $('preview').src = URL.createObjectURL(file);
+        $('preview').style.display = 'block';
+        $('placeholderText').style.display = 'none';
+      }
+    });
+
+    // Lancer l'analyse
+    $('analyzeBtn').addEventListener('click', async () => {
+      const file = $('chartFile').files[0];
+      if (!file) return alert("Veuillez d'abord importer une image.");
+
+      $('scanLine').classList.add('active');
+      $('resultCard').style.display = 'none';
+
+      const body = new FormData();
+      body.append('file', file);
+      body.append('mode', $('modeSelect').value);
+
+      try {
+        const res = await fetch('/api/analyze', { method: 'POST', body });
+        const data = await res.json();
+        $('scanLine').classList.remove('active');
+
+        if (res.ok) {
+          const r = data.result;
+          $('resultCard').style.display = 'block';
+          
+          // Signal
+          const sig = (r.signal || 'WAIT').toUpperCase();
+          $('signalText').textContent = sig;
+          $('signalBanner').className = 'signal-banner ' + (sig.includes('BUY') ? 'bg-buy' : sig.includes('SELL') ? 'bg-sell' : 'bg-wait');
+          $('confidence').textContent = `${r.confidence || 0}/100`;
+
+          // Données
+          $('rAsset').textContent = r.asset || '—';
+          $('rTimeframe').textContent = r.timeframe || '—';
+          $('rTrend').textContent = r.trend || '—';
+          $('rEntry').textContent = r.entry || '—';
+          $('rStop').textContent = r.stop_loss || '—';
+          $('rStructure').textContent = r.structure || '—';
+
+          // Zones et TPs
+          $('rZones').innerHTML = (r.zones || []).map(z => `<span style="background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:4px; font-size:0.8rem;">${z}</span>`).join('');
+          $('rTargets').innerHTML = (r.take_profits || []).map(t => `<span style="background:rgba(16,185,129,0.2); padding:4px 8px; border-radius:4px; font-size:0.8rem; color:#10b981;">${t}</span>`).join('');
+
+          // Bilan
+          $('rPointsForts').innerHTML = `<b>✅ Points Forts :</b><br>${(r.points_forts || []).join('<br>')}`;
+          $('rPointsCritiques').innerHTML = `<b>⚠️ Points Critiques :</b><br>${(r.points_critiques || []).join('<br>')}`;
+
+          // Scénarios
+          $('rScenarios').innerHTML = `
+            <div class="scenario-box"><b>Plan A :</b> ${r.scenarios?.principal || '—'}</div>
+            <div class="scenario-box" style="border-left-color:#0ea5e9;"><b>Plan B :</b> ${r.scenarios?.alternatif || '—'}</div>
+          `;
+
+          $('rConseil').innerHTML = `<b>💡 Conseil du Mentor :</b><br>${r.conseil || '—'}`;
+        } else {
+          alert("Erreur IA : " + data.error);
+        }
+      } catch (e) {
+        $('scanLine').classList.remove('active');
+        alert("Erreur de connexion.");
+      }
     });
   </script>
-  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
 </body>
 </html>
