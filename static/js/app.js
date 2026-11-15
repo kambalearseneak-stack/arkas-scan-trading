@@ -1,7 +1,6 @@
 const $ = (id) => document.getElementById(id);
 let currentReport = null;
 
-// Navigation
 document.querySelectorAll('.tab').forEach(button => {
   button.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === button));
@@ -12,7 +11,6 @@ document.querySelectorAll('.tab').forEach(button => {
   });
 });
 
-// Image et Effet Scan
 $('chartFile')?.addEventListener('change', () => {
   const file = $('chartFile').files?.[0];
   if (!file) return;
@@ -25,20 +23,15 @@ function toggleScanEffect(active) {
   if (scanLine) active ? scanLine.classList.add('active') : scanLine.classList.remove('active');
 }
 
-// Lancer l'analyse
 $('analyzeBtn')?.addEventListener('click', async () => {
   const file = $('chartFile').files?.[0];
   if (!file) { alert('Sélectionne une capture.'); return; }
   
   const mode = document.querySelector('input[name="mode"]:checked')?.value || 'scan';
-  const asset = $('assetSelect').value;
-  const timeframe = $('timeframeSelect').value;
 
   const body = new FormData();
   body.append('file', file);
   body.append('mode', mode);
-  body.append('asset', asset);
-  body.append('timeframe', timeframe);
   
   $('emptyResult').classList.add('hidden');
   $('loadingState').classList.remove('hidden');
@@ -62,7 +55,6 @@ $('analyzeBtn')?.addEventListener('click', async () => {
   }
 });
 
-// Affichage des Cartes
 function renderReport(r, mode) {
   $('loadingState')?.classList.add('hidden');
   $('analysisResult')?.classList.remove('hidden');
@@ -82,20 +74,26 @@ function renderReport(r, mode) {
   
   $('targets').innerHTML = (r.take_profits || []).map(tp => `<span>${tp}</span>`).join('');
   $('zones').innerHTML = (r.zones || []).map(z => `<span>${z}</span>`).join('');
-  $('reasons').innerHTML = (r.reasons || []).map(reason => `<li>${reason}</li>`).join('');
   
+  // Points forts et critiques
+  $('pointsForts').innerHTML = `<strong>✅ Points Forts :</strong><ul>${(r.points_forts || []).map(p => `<li>${p}</li>`).join('')}</ul>`;
+  $('pointsCritiques').innerHTML = `<strong>⚠️ Points Critiques :</strong><ul>${(r.points_critiques || []).map(p => `<li>${p}</li>`).join('')}</ul>`;
+  
+  // Scénarios
   if (r.scenarios) {
     $('scenarios').innerHTML = `
-      <div class="scenario-box"><strong>🚀 Scénario Principal</strong>${r.scenarios.principal}</div>
-      <div class="scenario-box" style="border-left-color: #0ea5e9;"><strong>🔄 Scénario Alternatif</strong>${r.scenarios.alternatif}</div>
+      <div class="scenario-box"><strong>🚀 Principal</strong>${r.scenarios.principal}</div>
+      <div class="scenario-box" style="border-left-color: #0ea5e9;"><strong>🔄 Alternatif</strong>${r.scenarios.alternatif}</div>
     `;
   }
   
+  // Conseil et Verdict
+  $('conseil').innerHTML = `<strong>💡 Conseil du Mentor :</strong><br>${r.conseil || '—'}`;
+  $('verdict').innerHTML = `<strong>⚖️ Verdict :</strong><br>${r.verdict || '—'}`;
+  
   $('invalidation').textContent = r.invalidation || '—';
-  $('riskWarning').textContent = r.risk_warning || '';
 }
 
-// Historique
 async function loadHistory() {
   const target = $('historyList');
   if (!target) return;
