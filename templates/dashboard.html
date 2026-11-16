@@ -23,8 +23,9 @@
     #tradingview_chart { width: 100%; height: 100%; border: none; }
 
     #tab-scanner { padding: 20px; overflow-y: auto; }
-    .scanner-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1400px; margin: 0 auto; width: 100%; }
+    .scanner-layout { display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; max-width: 1400px; margin: 0 auto; width: 100%; }
     .glass-panel { background: rgba(16, 29, 45, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    
     .upload-zone { height: 250px; border: 2px dashed rgba(14, 165, 233, 0.5); background: rgba(14, 165, 233, 0.05); border-radius: 12px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; position: relative; overflow: hidden; transition: 0.3s; }
     .upload-zone:hover { background: rgba(14, 165, 233, 0.1); border-color: #0ea5e9; }
     .upload-zone img { max-width: 100%; max-height: 100%; object-fit: contain; display: none; }
@@ -37,21 +38,22 @@
     .bg-buy { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
     .bg-sell { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
     .bg-wait { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b; }
+    
     .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
     .data-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; border-left: 3px solid #0ea5e9; }
     .data-item small { display: block; color: #94a3b8; font-size: 0.7rem; }
     .data-item b { font-size: 0.95rem; }
+
+    /* Nouveaux blocs */
+    .section-title { color: #facc15; font-size: 0.9rem; margin: 15px 0 5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
     .scenario-box { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; margin-top: 5px; font-size: 0.85rem; border-left: 3px solid #facc15; }
     .box-pro { background: rgba(16, 185, 129, 0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #10b981; margin-top: 5px; font-size: 0.85rem; }
     .box-con { background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #ef4444; margin-top: 5px; font-size: 0.85rem; }
-    .box-advice { background: rgba(14, 165, 233, 0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #0ea5e9; margin-top: 10px; font-size: 0.85rem; font-style: italic; }
+    .box-conclusion { background: rgba(250, 204, 21, 0.1); padding: 12px; border-radius: 6px; border-left: 3px solid #facc15; margin-top: 10px; font-size: 0.9rem; font-weight: bold; }
 
-    /* --- CHAT FLOTTANT & ANIMATION --- */
     .chat-bubble { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: linear-gradient(135deg, #0ea5e9, #0284c7); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 5px 20px rgba(14, 165, 233, 0.5); z-index: 1000; font-size: 1.5rem; transition: 0.3s; }
-    .chat-bubble:hover { transform: scale(1.1); }
     .chat-window { position: fixed; bottom: 90px; right: 20px; width: 350px; height: 450px; background: rgba(16, 29, 45, 0.95); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; display: none; flex-direction: column; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; }
     .chat-header { background: rgba(14, 165, 233, 0.2); padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-    .chat-header button { background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem; }
     .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 0.9rem; }
     .msg { padding: 8px 12px; border-radius: 8px; max-width: 80%; line-height: 1.4; }
     .msg.user { background: #0ea5e9; align-self: flex-end; }
@@ -59,13 +61,6 @@
     .chat-input-area { padding: 10px; display: flex; gap: 5px; border-top: 1px solid rgba(255,255,255,0.1); }
     .chat-input-area input { flex: 1; padding: 10px; border-radius: 6px; border: none; background: rgba(0,0,0,0.3); color: white; }
     .chat-input-area button { padding: 10px 15px; background: #0ea5e9; border: none; border-radius: 6px; color: white; cursor: pointer; }
-    
-    /* Animation de chargement */
-    .typing-indicator { display: flex; gap: 4px; padding: 10px; background: #1e293b; border-radius: 8px; width: fit-content; align-self: flex-start; }
-    .typing-indicator span { width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
-    .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
-    .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-    @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
 
     @media (max-width: 900px) { .scanner-layout { grid-template-columns: 1fr; } }
   </style>
@@ -76,7 +71,7 @@
     <div class="brand-logo">ARKAS <span>SCAN AI</span></div>
     <nav class="tabs-nav">
       <button class="nav-tab active" onclick="switchTab('tradingview', this)">📈 Marché</button>
-      <button class="nav-tab" onclick="switchTab('scanner', this)">🔍 Scanner / Journal</button>
+      <button class="nav-tab" onclick="switchTab('scanner', this)">🔍 Scanner / Audit</button>
     </nav>
     <form method="post" action="/logout"><button class="logout-btn">Déconnexion</button></form>
   </header>
@@ -88,8 +83,9 @@
 
     <div id="tab-scanner" class="tab-content">
       <div class="scanner-layout">
+        
         <div class="glass-panel">
-          <h3 style="margin-top:0; color:#facc15;">1. Scanner une image</h3>
+          <h3 style="margin-top:0; color:#facc15;">1. Importer l'image</h3>
           <div class="upload-zone" id="uploadZone">
             <div class="scan-line" id="scanLine"></div>
             <div id="uploadText" style="text-align:center;">
@@ -103,18 +99,9 @@
           <div style="display:flex; gap:10px; margin-top:15px;">
             <select id="modeSelect" style="flex:1; padding:10px; border-radius:6px; background:rgba(0,0,0,0.3); color:white; border:1px solid rgba(255,255,255,0.1);">
               <option value="scan">🚀 Générer un signal</option>
-              <option value="audit">🔎 Auditer</option>
+              <option value="audit">🔎 Auditer mon analyse</option>
             </select>
             <button id="analyzeBtn" style="flex:1; padding:10px; border:none; border-radius:6px; background:#0ea5e9; color:white; font-weight:bold; cursor:pointer;">Lancer l'IA</button>
-          </div>
-
-          <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-              <h4 style="color:#facc15; margin-top:0;">📝 Ajouter au Journal</h4>
-              <input type="text" id="journalAsset" placeholder="Actif (ex: XAUUSD)" style="width:100%; padding:8px; margin-bottom:5px; border-radius:5px; border:none; background:rgba(0,0,0,0.3); color:white;">
-              <input type="text" id="journalSignal" placeholder="Signal (ex: BUY)" style="width:100%; padding:8px; margin-bottom:5px; border-radius:5px; border:none; background:rgba(0,0,0,0.3); color:white;">
-              <input type="number" id="journalEntry" placeholder="Prix d'entrée" style="width:100%; padding:8px; margin-bottom:5px; border-radius:5px; border:none; background:rgba(0,0,0,0.3); color:white;">
-              <textarea id="journalNote" placeholder="Votre note..." style="width:100%; padding:8px; margin-bottom:5px; border-radius:5px; border:none; background:rgba(0,0,0,0.3); color:white; height:60px;"></textarea>
-              <button id="saveJournalBtn" style="width:100%; padding:10px; background:#facc15; color:#000; border:none; border-radius:5px; font-weight:bold; cursor:pointer;">Enregistrer dans le journal</button>
           </div>
         </div>
 
@@ -123,6 +110,7 @@
             <span id="signalText">WAIT</span>
             <span id="confidence">0/100</span>
           </div>
+          
           <div class="data-grid">
             <div class="data-item"><small>ACTIF</small><b id="rAsset">—</b></div>
             <div class="data-item"><small>TIMEFRAME</small><b id="rTimeframe">—</b></div>
@@ -131,34 +119,36 @@
             <div class="data-item"><small>STOP LOSS</small><b id="rStop">—</b></div>
             <div class="data-item"><small>STRUCTURE</small><b id="rStructure">—</b></div>
           </div>
-          <div style="margin-bottom:10px;">
-            <b style="color:#0ea5e9;">📌 Zones & TPs</b>
-            <div id="rZones" style="display:flex; flex-wrap:wrap; gap:5px; margin-top:5px;"></div>
-            <div id="rTargets" style="display:flex; flex-wrap:wrap; gap:5px; margin-top:5px;"></div>
-          </div>
-          <div style="margin-bottom:10px;">
-            <div id="rPointsForts" class="box-pro"></div>
-            <div id="rPointsCritiques" class="box-con"></div>
-          </div>
-          <div id="rScenarios" style="margin-bottom:10px;"></div>
-          <div id="rConseil" class="box-advice"></div>
+
+          <div class="section-title">🌐 Analyse Multi-Timeframe</div>
+          <div id="rMtf" style="font-size:0.85rem; color:#cbd5e1; background:rgba(255,255,255,0.05); padding:10px; border-radius:6px;">—</div>
+
+          <div class="section-title">📌 Zones & TPs</div>
+          <div id="rZones" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
+          <div id="rTargets" style="display:flex; flex-wrap:wrap; gap:5px; margin-top:5px;"></div>
+
+          <div class="section-title">⚖️ Bilan</div>
+          <div id="rPointsForts" class="box-pro"></div>
+          <div id="rPointsCritiques" class="box-con"></div>
+
+          <div class="section-title">📋 Scénarios</div>
+          <div id="rScenarios"></div>
+
+          <div class="section-title">💡 Conclusion & Conseil</div>
+          <div id="rConclusion" class="box-conclusion"></div>
+          <div id="rConseil" style="font-size:0.85rem; font-style:italic; color:#94a3b8; margin-top:10px;"></div>
         </div>
+
       </div>
     </div>
   </main>
 
   <div class="chat-bubble" onclick="toggleChat()">🤖</div>
-  
   <div class="chat-window" id="chatWindow">
-    <div class="chat-header">
-      <span>🤖 ARKAS - Agent AI</span>
-      <button onclick="toggleChat()">×</button>
-    </div>
-    <div class="chat-messages" id="chatMessages">
-      <div class="msg bot">Bonjour ! Je suis ARKAS. Demandez-moi les news économiques ou des conseils sur vos analyses.</div>
-    </div>
+    <div class="chat-header"><span>🤖 ARKAS - Agent AI</span><button onclick="toggleChat()">×</button></div>
+    <div class="chat-messages" id="chatMessages"><div class="msg bot">Bonjour ! Posez-moi une question sur le trading ou les news.</div></div>
     <div class="chat-input-area">
-      <input type="text" id="chatInput" placeholder="Ex: Quelles sont les news ?" onkeypress="if(event.key==='Enter') sendMessage()">
+      <input type="text" id="chatInput" placeholder="Votre question..." onkeypress="if(event.key==='Enter') sendMessage()">
       <button onclick="sendMessage()">Envoyer</button>
     </div>
   </div>
@@ -194,6 +184,7 @@
       const file = $('chartFile').files[0];
       if (!file) return alert("Veuillez d'abord importer une image.");
       $('scanLine').classList.add('active');
+      
       const body = new FormData();
       body.append('file', file);
       body.append('mode', $('modeSelect').value);
@@ -206,25 +197,38 @@
         if (res.ok) {
           const r = data.result;
           $('resultCard').style.display = 'block';
+          
           const sig = (r.signal || 'WAIT').toUpperCase();
           $('signalText').textContent = sig;
           $('signalBanner').className = 'signal-banner ' + (sig.includes('BUY') ? 'bg-buy' : sig.includes('SELL') ? 'bg-sell' : 'bg-wait');
           $('confidence').textContent = `${r.confidence || 0}/100`;
+
           $('rAsset').textContent = r.asset || '—';
           $('rTimeframe').textContent = r.timeframe || '—';
           $('rTrend').textContent = r.trend || '—';
           $('rEntry').textContent = r.entry || '—';
           $('rStop').textContent = r.stop_loss || '—';
           $('rStructure').textContent = r.structure || '—';
+          $('rMtf').textContent = r.analyse_multi_timeframe || '—';
+
           $('rZones').innerHTML = (r.zones || []).map(z => `<span style="background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:4px; font-size:0.8rem;">${z}</span>`).join('');
           $('rTargets').innerHTML = (r.take_profits || []).map(t => `<span style="background:rgba(16,185,129,0.2); padding:4px 8px; border-radius:4px; font-size:0.8rem; color:#10b981;">${t}</span>`).join('');
+
           $('rPointsForts').innerHTML = `<b>✅ Points Forts :</b><br>${(r.points_forts || []).join('<br>')}`;
           $('rPointsCritiques').innerHTML = `<b>⚠️ Points Critiques :</b><br>${(r.points_critiques || []).join('<br>')}`;
+
           $('rScenarios').innerHTML = `
-            <div class="scenario-box"><b>Plan A :</b> ${r.scenarios?.principal || '—'}</div>
-            <div class="scenario-box" style="border-left-color:#0ea5e9;"><b>Plan B :</b> ${r.scenarios?.alternatif || '—'}</div>
+            <div class="scenario-box"><b>Plan A (Principal) :</b> ${r.scenarios?.principal || '—'}</div>
+            <div class="scenario-box" style="border-left-color:#0ea5e9;"><b>Plan B (Alternatif) :</b> ${r.scenarios?.alternatif || '—'}</div>
           `;
-          $('rConseil').innerHTML = `<b>💡 Conseil :</b><br>${r.conseil || '—'}`;
+
+          $('rConclusion').innerHTML = `<b>Verdict :</b> ${r.conclusion || '—'}`;
+          $('rConseil').innerHTML = `<b>Conseil :</b> ${r.conseil || '—'}`;
+
+          // Si c'est un audit, on affiche le verdict spécifique
+          if (r.verdict_audit) {
+            $('rConclusion').innerHTML += `<br><br><b>Audit de votre analyse :</b> ${r.verdict_audit}`;
+          }
         } else {
           alert("Erreur IA : " + data.error);
         }
@@ -232,26 +236,6 @@
         $('scanLine').classList.remove('active');
         alert("Erreur de connexion.");
       }
-    });
-
-    $('saveJournalBtn').addEventListener('click', async () => {
-        const body = {
-            asset: $('journalAsset').value,
-            signal: $('journalSignal').value,
-            entry: $('journalEntry').value,
-            commentaire: $('journalNote').value
-        };
-        if (!body.asset || !body.signal) return alert("Remplissez l'actif et le signal.");
-        const res = await fetch('/api/journal', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(body)
-        });
-        if (res.ok) {
-            alert("✅ Trade ajouté au journal !");
-            $('journalAsset').value = ''; $('journalSignal').value = '';
-            $('journalEntry').value = ''; $('journalNote').value = '';
-        } else { alert("Erreur lors de l'ajout."); }
     });
 
     function toggleChat() {
@@ -269,7 +253,6 @@
       input.value = '';
       messages.scrollTop = messages.scrollHeight;
 
-      // Ajout de l'animation "..." pendant que l'IA réfléchit
       const typingDiv = document.createElement('div');
       typingDiv.className = 'typing-indicator';
       typingDiv.innerHTML = '<span></span><span></span><span></span>';
@@ -284,7 +267,6 @@
         });
         const data = await res.json();
         
-        // On retire l'animation une fois la réponse reçue
         typingDiv.remove();
 
         if (res.ok) {
