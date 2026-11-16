@@ -71,9 +71,7 @@ def init_db():
 
 init_db()
 
-# --- FONCTION POUR L'IA ---
 def lire_dernieres_analyses(limite=3):
-    """Permet à l'IA de lire les dernières analyses du site."""
     try:
         with db_connect() as conn:
             rows = conn.execute("SELECT asset, signal, entry, created_at FROM analyses ORDER BY id DESC LIMIT ?", (limite,)).fetchall()
@@ -82,19 +80,10 @@ def lire_dernieres_analyses(limite=3):
     except Exception as e:
         return f"Erreur : {str(e)}"
 
-# --- DÉCLARATION DES OUTILS POUR GEMINI ---
 outil_analyses = types.FunctionDeclaration(
     name="lire_dernieres_analyses",
     description="Lit les dernières analyses de trading effectuées sur le site.",
-    parameters={
-        "type": "OBJECT",
-        "properties": {
-            "limite": {
-                "type": "INTEGER",
-                "description": "Le nombre d'analyses à récupérer (par défaut 3)."
-            }
-        }
-    }
+    parameters={"type": "OBJECT", "properties": {"limite": {"type": "INTEGER", "description": "Nombre d'analyses à récupérer."}}}
 )
 
 def admin_required(view):
@@ -112,17 +101,51 @@ def csrf_token(): return ""
 def inject_csrf(): return {"csrf_token": csrf_token}
 def verify_csrf(): pass
 
-# --- PROMPT D'ANALYSE ---
+# --- LE NOUVEAU PROMPT ULTRA-DÉTAILLÉ ---
 def build_prompt(mode):
     common = """
 Tu es ARKAS SCAN AI, un Mentor de Trading expert (SMC, ICT, Price Action).
-Analyse l'image fournie. Tu dois DÉTECTER TOI-MÊME l'actif, le timeframe et les prix.
-Réponds EXCLUSIVEMENT en JSON valide avec ces clés :
-{"signal": "", "asset": "", "timeframe": "", "trend": "", "structure": "", "zones": [], "entry": "", "stop_loss": "", "take_profits": [], "confidence": 0, "points_forts": [], "points_critiques": [], "conseil": "", "scenarios": {"principal": "", "alternatif": ""}, "invalidation": ""}
+Tu dois analyser l'image fournie en profondeur.
+
+INSTRUCTIONS CRUCIALES :
+1. LECTURE MULTI-TIMEFRAME : Même si l'image montre un seul timeframe, déduis la structure des timeframes supérieurs et inférieurs en fonction de la tendance visible. Explique ce que tu vois.
+2. SIGNAUX PRÉCIS : Tu dois obligatoirement choisir parmi : BUY NOW, SELL NOW, BUY LIMIT, SELL LIMIT, ou WAIT.
+3. SCÉNARIOS : Donne un scénario principal et un scénario alternatif. Explique les conditions exactes d'entrée (ex: "Attendre la clôture au-dessus de...").
+4. CONCLUSION : Termine par un verdict clair.
+
+Réponds EXCLUSIVEMENT en JSON valide avec ces clés (en français) :
+{
+ "signal": "BUY NOW | SELL NOW | BUY LIMIT | SELL LIMIT | WAIT",
+ "asset": "Nom de l'actif",
+ "timeframe": "Timeframe principal",
+ "analyse_multi_timeframe": "Ton analyse des TF supérieurs et inférieurs",
+ "trend": "Haussière | Baissière | Range",
+ "structure": "Explication de la structure (BOS, CHoCH)",
+ "zones": ["Zone 1", "Zone 2"],
+ "entry": "Prix d'entrée exact",
+ "stop_loss": "Stop Loss",
+ "take_profits": ["TP1", "TP2", "TP3"],
+ "confidence": 0,
+ "points_forts": ["Point fort 1"],
+ "points_critiques": ["Point critique 1"],
+ "scenarios": {
+   "principal": "Description précise du trade (ex: Buy Limit à 2350)",
+   "alternatif": "Description précise du plan B"
+ },
+ "conclusion": "Ton verdict final en une phrase",
+ "conseil": "Conseil de mentor pour ce trade",
+ "invalidation": "Condition d'invalidation"
+}
 """
     if mode == "audit":
-        return common + "\nMODE AUDIT : Évalue l'analyse de l'utilisateur."
-    return common + "\nMODE SCANNER : Cherche une configuration."
+        return common + """
+MODE AUDIT : L'utilisateur te soumet une analyse. 
+1. Corrige ses erreurs (s'il a mal lu la structure ou le signal).
+2. Donne TON point de vue et TON signal.
+3. Sois critique mais constructif.
+Ajoute la clé "verdict_audit" à ton JSON (ex: "Analyse correcte mais entrée prématurée").
+"""
+    return common + "\nMODE SCANNER : Cherche la meilleure configuration possible."
 
 def extract_json(text):
     text = (text or "").strip()
@@ -131,7 +154,7 @@ def extract_json(text):
     try:
         return json.loads(text)
     except:
-        return {"signal": "WAIT", "asset": "Erreur", "timeframe": "-", "trend": "-", "structure": "-", "zones": [], "entry": "-", "stop_loss": "-", "take_profits": [], "confidence": 0, "points_forts": [], "points_critiques": [], "conseil": "-", "scenarios": {"principal": "-", "alternatif": "-"}, "invalidation": "-"}
+        return {"signal": "WAIT", "asset": "Erreur", "timeframe": "-", "analyse_multi_timeframe": "-", "trend": "-", "structure": "-", "zones": [], "entry": "-", "stop_loss": "-", "take_profits": [], "confidence": 0, "points_forts": [], "points_critiques": [], "scenarios": {"principal": "-", "alternatif": "-"}, "conclusion": "-", "conseil": "-", "invalidation": "-", "verdict_audit": "-"}
 
 @app.route("/")
 def home():
@@ -195,88 +218,39 @@ def analyze():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# --- ROUTE CHAT INTERACTIVE (CORRIGÉE) ---
 @app.route("/api/chat", methods=["POST"])
 @admin_required
 def chat():
     if not gemini_client: return jsonify({"error": "GOOGLE_API_KEY manquante."}), 503
-    
     data = request.get_json()
     user_message = data.get("message", "")
     if not user_message: return jsonify({"error": "Message vide."}), 400
     
-    try:
-        # On prépare les outils
-        tools = [
-            types.Tool(google_search=types.GoogleSearch()),
-            types.Tool(function_declarations=[outil_analyses])
-        ]
-        
-        config = types.GenerateContentConfig(
-            tools=tools,
-            temperature=0.3
-        )
-        
-        prompt = (
-            "Tu es ARKAS, un assistant expert en trading. "
-            "Tu as accès aux dernières analyses du site via tes outils. "
-            "Si on te demande des news ou le calendrier économique, utilise la recherche Google. "
-            "Sois direct et donne des avertissements clairs. "
-            "Question : " + user_message
-        )
-        
-        # Premier appel à l'IA
-        response = gemini_client.models.generate_content(
-            model=GEMINI_MODEL, 
-            contents=[prompt],
-            config=config
-        )
-        
-        # Vérification si l'IA a décidé d'appeler notre fonction
-        part = response.candidates[0].content.parts[0]
-        if hasattr(part, 'function_call') and part.function_call:
-            fc = part.function_call
-            if fc.name == "lire_dernieres_analyses":
-                # On exécute la fonction
-                args = dict(fc.args) if fc.args else {}
-                resultat = lire_dernieres_analyses(**args)
-                
-                # On renvoie le résultat à l'IA pour qu'elle formule la réponse finale
-                response = gemini_client.models.generate_content(
-                    model=GEMINI_MODEL,
-                    contents=[
-                        prompt,
-                        response.candidates[0].content,
-                        types.Part.from_function_response(
-                            name=fc.name,
-                            response={"result": resultat}
-                        )
-                    ],
-                    config=config
-                )
-        
-        return jsonify({"reply": response.text})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/api/journal", methods=["POST"])
-@admin_required
-def journal():
-    data = request.get_json()
-    try:
-        with db_connect() as conn:
-            conn.execute("""
-                INSERT INTO analyses (created_at, mode, original_filename, mime_type, result_text, signal, asset, timeframe) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                datetime.now(timezone.utc).isoformat(), "manuel", "journal", "text/plain", 
-                json.dumps({"commentaire": data.get('commentaire')}), 
-                data.get('signal'), data.get('asset'), "Manuel"
-            ))
-            conn.commit()
-        return jsonify({"status": "ok"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    tools = [types.Tool(google_search=types.GoogleSearch()), types.Tool(function_declarations=[outil_analyses])]
+    config = types.GenerateContentConfig(tools=tools, temperature=0.3)
+    prompt = "Tu es ARKAS, assistant expert en trading. Réponds de manière concise. Question : " + user_message
+    
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = gemini_client.models.generate_content(model=GEMINI_MODEL, contents=[prompt], config=config)
+            part = response.candidates[0].content.parts[0]
+            if hasattr(part, 'function_call') and part.function_call:
+                fc = part.function_call
+                if fc.name == "lire_dernieres_analyses":
+                    args = dict(fc.args) if fc.args else {}
+                    resultat = lire_dernieres_analyses(**args)
+                    response = gemini_client.models.generate_content(
+                        model=GEMINI_MODEL,
+                        contents=[prompt, response.candidates[0].content, types.Part.from_function_response(name=fc.name, response={"result": resultat})],
+                        config=config
+                    )
+            return jsonify({"reply": response.text})
+        except Exception as e:
+            if "429" in str(e) and attempt < max_retries - 1:
+                time.sleep(5)
+                continue
+            return jsonify({"error": str(e)}), 500
 
 @app.route("/health")
 def health(): return jsonify({"status": "ok"})
